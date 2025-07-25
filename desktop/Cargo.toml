@@ -1,0 +1,8 @@
+[package]
+name = "desktop"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sdl2 = "0.38.0"
+serial = "0.4.0"
