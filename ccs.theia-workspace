@@ -1,0 +1,16 @@
+{
+  "folders": [
+    {
+      "path": "sensortag"
+    },
+    {
+      "path": "launchpad"
+    },
+    {
+      "path": "tirtos_builds_CC1350_LAUNCHXL_release_ccs"
+    },
+    {
+      "path": "tirtos_builds_CC1350STK_release_ccs"
+    }
+  ]
+}
