@@ -22,6 +22,15 @@
                     ]
                 }
             ]
+        },
+        {
+            "name": "_concentrator",
+            "type": "ccs-debug",
+            "request": "launch",
+            "projectInfo": {
+                "name": "_concentrator",
+                "resourceId": "/_concentrator"
+            }
         }
     ]
 }
