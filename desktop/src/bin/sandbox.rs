@@ -11,7 +11,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub fn main() -> Result<(), String> {
     // thread::spawn(|| {
-        const SETTINGS: serial::PortSettings = serial::PortSettings {
+        /*const SETTINGS: serial::PortSettings = serial::PortSettings {
             baud_rate: serial::Baud115200,
             char_size: serial::Bits8,
             parity: serial::ParityNone,
@@ -56,7 +56,7 @@ pub fn main() -> Result<(), String> {
             last_clock_time = time;
 
             //println!("{} {clock} {brightness}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis());
-        }
+        }*/
     // });
 
     let sdl_context = sdl2::init()?;
@@ -97,10 +97,9 @@ pub fn main() -> Result<(), String> {
 
         canvas.set_draw_color(Color::WHITE);
         canvas.fill_rect(Rect::new(0, 0, 2560, 1440))?;
-
         canvas.present();
 
-        //thread::sleep(Duration::from_millis(1));
+        thread::sleep(Duration::from_secs(1));
 
         canvas.set_draw_color(Color::BLACK);
         canvas.fill_rect(Rect::new(0, 0, 2560, 1440))?;
