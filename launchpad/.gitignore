@@ -9,7 +9,6 @@
 #################
 
 *.pydevproject
-.project
 .metadata
 bin/
 tmp/
