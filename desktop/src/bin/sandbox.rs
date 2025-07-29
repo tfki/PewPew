@@ -1,5 +1,3 @@
-extern crate sdl2;
-
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
@@ -11,7 +9,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub fn main() -> Result<(), String> {
     // thread::spawn(|| {
-        /*const SETTINGS: serial::PortSettings = serial::PortSettings {
+        const SETTINGS: serial::PortSettings = serial::PortSettings {
             baud_rate: serial::Baud115200,
             char_size: serial::Bits8,
             parity: serial::ParityNone,
@@ -19,7 +17,7 @@ pub fn main() -> Result<(), String> {
             flow_control: serial::FlowNone,
         };
 
-        let mut port = serial::open("/dev/ttyACM0").unwrap();
+        let mut port = serial::open("/dev/serial/by-path/platform-vhci_hcd.0-usb-0:1:1.0").unwrap();
 
         port.configure(&SETTINGS).unwrap();
         port.set_timeout(Duration::from_secs(1000)).unwrap();
@@ -27,12 +25,14 @@ pub fn main() -> Result<(), String> {
         let mut last_clock = 0;
         let mut last_clock_time = SystemTime::now();
         let mut reader = BufReader::new(port);
+
+        println!();
         loop {
             let mut data = Vec::new();
             reader.read_until(255_u8, &mut data).unwrap();
 
             if data.len() < 7 {
-                println!("skipping");
+                println!("Skipping incomplete package..");
                 continue;
             }
 
@@ -46,9 +46,8 @@ pub fn main() -> Result<(), String> {
 
             let time = SystemTime::now();
             let diff = time.duration_since(last_clock_time);
-            println!("clock changed after {}", diff.unwrap().as_millis());
-            println!("clock diff {}", clock - last_clock);
-            println!("brightness {brightness}");
+
+            print!("\rbrightness {brightness:5.}");
 
             if clock == last_clock { panic!(); }
 
@@ -56,7 +55,7 @@ pub fn main() -> Result<(), String> {
             last_clock_time = time;
 
             //println!("{} {clock} {brightness}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis());
-        }*/
+        }
     // });
 
     let sdl_context = sdl2::init()?;

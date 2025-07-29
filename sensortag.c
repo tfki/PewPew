@@ -58,7 +58,7 @@ void timerCallback(GPTimerCC26XX_Handle handle, GPTimerCC26XX_IntMask interruptM
     time_counter++;
 }
 
-bool send(uint8_t* data) {
+bool rf_send(uint8_t* data) {
     RF_cmdPropTx.pktLen = PAYLOAD_LENGTH;
     RF_cmdPropTx.pPkt = data;
     RF_cmdPropTx.startTrigger.triggerType = TRIG_NOW;
@@ -190,14 +190,16 @@ void *main_thread(void *arg0)
             memcpy(&buffer[4], &rawLux, 2);
 
             for (int i = 0; i < PAYLOAD_LENGTH - 1; i++) {
+                // 255 is reserved for packet delimiter
                 if (buffer[i] == 255) {
-                    buffer[i] = 245;
+                    buffer[i] = 254;
                 }
             }
 
+            // packet delimiter
             buffer[PAYLOAD_LENGTH - 1] = 255;
 
-            send(buffer);
+            rf_send(buffer);
             old_raw_lux = rawLux;
         //}
 
