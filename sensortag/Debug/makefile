@@ -13,6 +13,7 @@ ORDERED_OBJS += \
 "./ccfg.obj" \
 "./main.obj" \
 "./main_tirtos.obj" \
+"./sensortag.obj" \
 "./sensors/SensorBmp280.obj" \
 "./sensors/SensorHdc1000.obj" \
 "./sensors/SensorI2C.obj" \
@@ -164,8 +165,8 @@ sensortag.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) /home/tfki/iot_lab_final/tirtos_b
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)
-	-$(RM) "CC1350STK.obj" "CC1350STK_fxns.obj" "ccfg.obj" "main.obj" "main_tirtos.obj" "sensors/SensorBmp280.obj" "sensors/SensorHdc1000.obj" "sensors/SensorI2C.obj" "sensors/SensorMpu9250.obj" "sensors/SensorOpt3001.obj" "sensors/SensorUtil.obj" "smartrf_settings/smartrf_settings.obj" 
-	-$(RM) "CC1350STK.d" "CC1350STK_fxns.d" "ccfg.d" "main.d" "main_tirtos.d" "sensors/SensorBmp280.d" "sensors/SensorHdc1000.d" "sensors/SensorI2C.d" "sensors/SensorMpu9250.d" "sensors/SensorOpt3001.d" "sensors/SensorUtil.d" "smartrf_settings/smartrf_settings.d" 
+	-$(RM) "CC1350STK.obj" "CC1350STK_fxns.obj" "ccfg.obj" "main.obj" "main_tirtos.obj" "sensortag.obj" "sensors/SensorBmp280.obj" "sensors/SensorHdc1000.obj" "sensors/SensorI2C.obj" "sensors/SensorMpu9250.obj" "sensors/SensorOpt3001.obj" "sensors/SensorUtil.obj" "smartrf_settings/smartrf_settings.obj" 
+	-$(RM) "CC1350STK.d" "CC1350STK_fxns.d" "ccfg.d" "main.d" "main_tirtos.d" "sensortag.d" "sensors/SensorBmp280.d" "sensors/SensorHdc1000.d" "sensors/SensorI2C.d" "sensors/SensorMpu9250.d" "sensors/SensorOpt3001.d" "sensors/SensorUtil.d" "smartrf_settings/smartrf_settings.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

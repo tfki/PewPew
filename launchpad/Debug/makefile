@@ -12,6 +12,7 @@ ORDERED_OBJS += \
 "./CC1350_LAUNCHXL_fxns.obj" \
 "./RFQueue.obj" \
 "./ccfg.obj" \
+"./launchpad.obj" \
 "./main.obj" \
 "./main_tirtos.obj" \
 "./smartrf_settings/smartrf_settings.obj" \
@@ -144,7 +145,7 @@ all: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@$(MAKE) --no-print-directory -Onone "launchpad.out"
 
 dependents:
-	-cd /home/tfki/iot_lab_final/tirtos_builds_CC1350_LAUNCHXL_release_ccs/Debug && $(MAKE) all
+	-cd /home/tfki/iot_lab_final/tirtos_builds_CC1350_LAUNCHXL_release_ccs/Debug && $(MAKE) clean all
 
 # Tool invocations
 launchpad.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) /home/tfki/iot_lab_final/tirtos_builds_CC1350_LAUNCHXL_release_ccs/Debug/tirtos_builds_CC1350_LAUNCHXL_release_ccs.lib
@@ -157,8 +158,8 @@ launchpad.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) /home/tfki/iot_lab_final/tirtos_b
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)
-	-$(RM) "CC1350_LAUNCHXL.obj" "CC1350_LAUNCHXL_fxns.obj" "RFQueue.obj" "ccfg.obj" "main.obj" "main_tirtos.obj" "smartrf_settings/smartrf_settings.obj" 
-	-$(RM) "CC1350_LAUNCHXL.d" "CC1350_LAUNCHXL_fxns.d" "RFQueue.d" "ccfg.d" "main.d" "main_tirtos.d" "smartrf_settings/smartrf_settings.d" 
+	-$(RM) "CC1350_LAUNCHXL.obj" "CC1350_LAUNCHXL_fxns.obj" "RFQueue.obj" "ccfg.obj" "launchpad.obj" "main.obj" "main_tirtos.obj" "smartrf_settings/smartrf_settings.obj" 
+	-$(RM) "CC1350_LAUNCHXL.d" "CC1350_LAUNCHXL_fxns.d" "RFQueue.d" "ccfg.d" "launchpad.d" "main.d" "main_tirtos.d" "smartrf_settings/smartrf_settings.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

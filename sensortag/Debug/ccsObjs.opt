@@ -3,6 +3,7 @@
 "./ccfg.obj"
 "./main.obj"
 "./main_tirtos.obj"
+"./sensortag.obj"
 "./sensors/SensorBmp280.obj"
 "./sensors/SensorHdc1000.obj"
 "./sensors/SensorI2C.obj"
