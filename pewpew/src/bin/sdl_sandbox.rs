@@ -10,7 +10,7 @@ pub fn main() -> Result<(), String> {
     let video_subsystem = sdl_context.video()?;
 
     let window = video_subsystem
-        .window("rust-sdl2 demo: Video", 1920, 1080)
+        .window("PewPew sdl-sandbox", 1920, 1080)
         .position_centered()
         .opengl()
         .build()
