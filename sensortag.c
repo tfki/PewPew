@@ -52,6 +52,7 @@ static uint16_t my_id = 0;
 static RF_Object rfObject;
 static RF_Handle rfHandle;
 static int time_counter = 0;
+static bool button_pressed = false;
 
 GPTimerCC26XX_Handle hTimer;
 void timerCallback(GPTimerCC26XX_Handle handle, GPTimerCC26XX_IntMask interruptMask) {
@@ -64,7 +65,7 @@ void rf_send(uint8_t* data, size_t length) {
     RF_cmdPropTx.pPkt = data;
     RF_cmdPropTx.startTrigger.triggerType = TRIG_NOW;
 
-    /* Send packet */
+    /* rf_send packet */
     RF_EventMask terminationReason = RF_runCmd(rfHandle, (RF_Op*)&RF_cmdPropTx,
                                                RF_PriorityNormal, NULL, 0);
     switch(terminationReason)
@@ -122,11 +123,7 @@ void rf_send(uint8_t* data, size_t length) {
     }
 }
 
-static void btn_callback(uint_least8_t index) {
-    if (my_id == 0) {
-        my_id = time_counter % UINT16_MAX;
-    }
-
+static void rf_send_button_pressed_message() {
     const size_t length = 8;
     uint8_t buffer[length];
     uint8_t id = 2;
@@ -142,7 +139,35 @@ static void btn_callback(uint_least8_t index) {
     }
 
     buffer[length - 1] = 255;
-    send(buffer, length);
+    rf_send(buffer, length);
+}
+
+static void rf_send_brightness_message(uint16_t brightness) {
+    const size_t length = 10;
+    uint8_t buffer[length];
+    uint8_t id = 1;
+
+    memcpy(&buffer[0], &my_id, 2);
+    memcpy(&buffer[2], &time_counter, 4);
+    memcpy(&buffer[6], &id, 1); // 123 = brightness packet
+    memcpy(&buffer[7], &brightness, 2);
+
+    for (int i = 0; i < length - 1; i++) {
+        if (buffer[i] == 255) {
+            buffer[i] = 254;
+        }
+    }
+
+    buffer[length - 1] = 255;
+    rf_send(buffer, length);
+}
+
+static void btn_callback(uint_least8_t index) {
+    if (my_id == 0) {
+        my_id = time_counter % UINT16_MAX;
+    }
+
+    button_pressed = true;
 }
 
 
@@ -205,38 +230,24 @@ void *main_thread(void *arg0)
         while (1) {}
     }
 
-    uint16_t old_raw_lux = 0;
+    uint16_t last_raw_lux = 0;
     while (1)
     {
         if (my_id == 0) continue;
 
-        uint16_t rawLux;
+        uint16_t raw_lux;
 
         /* Read sensor */
-        SensorOpt3001_read(&rawLux);
+        SensorOpt3001_read(&raw_lux);
 
-        //if (old_raw_lux != rawLux) {
-            const size_t length = 10;
-            uint8_t buffer[length];
-            uint8_t id = 1;
-
-            memcpy(&buffer[0], &my_id, 2);
-            memcpy(&buffer[2], &time_counter, 4);
-            memcpy(&buffer[6], &id, 1); // 123 = brightness packet
-            memcpy(&buffer[7], &rawLux, 2);
-
-            for (int i = 0; i < length - 1; i++) {
-		// 255 is reserved for packet delimiter
-                if (buffer[i] == 255) {
-                    buffer[i] = 254;
-                }
-            }
-
-            buffer[length - 1] = 255;
-
-            rf_send(buffer, length);
-            old_raw_lux = rawLux;
-        //}
+        if (raw_lux != last_raw_lux) {
+            rf_send_brightness_message(raw_lux);
+            last_raw_lux = raw_lux;
+        }
+        if (button_pressed) {
+            rf_send_button_pressed_message();
+            button_pressed = false;
+        }
 
         /*
         latestAdcValue = (uint16_t) lux;
@@ -265,7 +276,7 @@ void *main_thread(void *arg0)
         SensorHdc1000_read(&rawtmp, &rawhum);
         SensorHdc1000_convert(rawtmp, rawhum, &latestTemp, &latestHum);
 
-        NodeRadioTask_sendAdcData(latestAdcValue);
+        NodeRadioTask_rf_sendAdcData(latestAdcValue);
         */
 
         //sprintf(buffer, "%.2f lux\n", lux);

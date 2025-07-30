@@ -2,9 +2,9 @@ use std::fmt::Debug;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Message {
-    tag_id: u16,
-    timestamp: u32,
-    content: MessageContent,
+    pub tag_id: u16,
+    pub timestamp: u32,
+    pub content: MessageContent,
 }
 
 pub enum MessageParseError {

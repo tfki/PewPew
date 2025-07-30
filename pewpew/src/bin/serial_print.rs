@@ -1,7 +1,7 @@
+use pewpew::Message;
 use serial::SerialPort;
 use std::io::{BufRead, BufReader};
 use std::time::Duration;
-use pewpew::Message;
 
 static PAYLOAD_LENGTH: usize = 7;
 
@@ -27,8 +27,7 @@ pub fn main() -> ! {
         reader.read_until(255_u8, &mut data).unwrap();
 
         if let Ok(message) = Message::try_from(data.as_slice()) {
-            print!("\r{message:?}");
+            println!("{message:?}");
         }
     }
-
 }
