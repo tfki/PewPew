@@ -221,7 +221,7 @@ void callback(RF_Handle h, RF_CmdHandle ch, RF_EventMask e)
         packetLength      = *(uint8_t*)(&currentDataEntry->data);
         packetDataPointer = (uint8_t*)(&currentDataEntry->data + 1);
 
-        UART_write(uart_handle, packetDataPointer, 7);
+        UART_write(uart_handle, packetDataPointer, packetLength);
 
         RFQueue_nextEntry();
     }

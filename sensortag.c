@@ -28,6 +28,7 @@
 #include <ti/display/DisplayExt.h>
 #include <ti/drivers/UART.h>
 #include <ti/drivers/timer/GPTimerCC26XX.h>
+#include <ti/drivers/GPIO.h>
 
 #include "sensors/SensorI2C.h"
 #include "sensors/SensorOpt3001.h"
@@ -46,7 +47,7 @@ static float latestTemp;
 static float latestHum;
 static uint32_t latestPress;
 
-#define PAYLOAD_LENGTH 7
+static uint16_t my_id = 0;
 
 static RF_Object rfObject;
 static RF_Handle rfHandle;
@@ -58,8 +59,8 @@ void timerCallback(GPTimerCC26XX_Handle handle, GPTimerCC26XX_IntMask interruptM
     time_counter++;
 }
 
-bool rf_send(uint8_t* data) {
-    RF_cmdPropTx.pktLen = PAYLOAD_LENGTH;
+void rf_send(uint8_t* data, size_t length) {
+    RF_cmdPropTx.pktLen = length;
     RF_cmdPropTx.pPkt = data;
     RF_cmdPropTx.startTrigger.triggerType = TRIG_NOW;
 
@@ -121,8 +122,37 @@ bool rf_send(uint8_t* data) {
     }
 }
 
+static void btn_callback(uint_least8_t index) {
+    if (my_id == 0) {
+        my_id = time_counter % UINT16_MAX;
+    }
+
+    const size_t length = 8;
+    uint8_t buffer[length];
+    uint8_t id = 2;
+
+    memcpy(&buffer[0], &my_id, 2);
+    memcpy(&buffer[2], &time_counter, 4);
+    memcpy(&buffer[6], &id, 1); // 321 = button pressed packet
+
+    for (int i = 0; i < length - 1; i++) {
+        if (buffer[i] == 255) {
+            buffer[i] = 254;
+        }
+    }
+
+    buffer[length - 1] = 255;
+    send(buffer, length);
+}
+
+
 void *main_thread(void *arg0)
 {
+    GPIO_init();
+    GPIO_setConfig(Board_GPIO_BUTTON0, GPIO_CFG_IN_INT_FALLING | GPIO_CFG_IN_PU);
+    GPIO_setCallback(Board_GPIO_BUTTON0, &btn_callback);
+    GPIO_enableInt(Board_GPIO_BUTTON0);
+
     {
         GPTimerCC26XX_Params params;
         GPTimerCC26XX_Params_init(&params);
@@ -178,28 +208,33 @@ void *main_thread(void *arg0)
     uint16_t old_raw_lux = 0;
     while (1)
     {
+        if (my_id == 0) continue;
+
         uint16_t rawLux;
 
         /* Read sensor */
         SensorOpt3001_read(&rawLux);
 
         //if (old_raw_lux != rawLux) {
-            uint8_t buffer[PAYLOAD_LENGTH];
+            const size_t length = 10;
+            uint8_t buffer[length];
+            uint8_t id = 1;
 
-            memcpy(&buffer[0], &time_counter, 4);
-            memcpy(&buffer[4], &rawLux, 2);
+            memcpy(&buffer[0], &my_id, 2);
+            memcpy(&buffer[2], &time_counter, 4);
+            memcpy(&buffer[6], &id, 1); // 123 = brightness packet
+            memcpy(&buffer[7], &rawLux, 2);
 
-            for (int i = 0; i < PAYLOAD_LENGTH - 1; i++) {
-                // 255 is reserved for packet delimiter
+            for (int i = 0; i < length - 1; i++) {
+		// 255 is reserved for packet delimiter
                 if (buffer[i] == 255) {
                     buffer[i] = 254;
                 }
             }
 
-            // packet delimiter
-            buffer[PAYLOAD_LENGTH - 1] = 255;
+            buffer[length - 1] = 255;
 
-            rf_send(buffer);
+            rf_send(buffer, length);
             old_raw_lux = rawLux;
         //}
 
