@@ -16,7 +16,7 @@ pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
 
     let video_subsystem = sdl_context.video()?;
-    //let _audio_subsystem = sdl_context.audio()?; // TODO use
+    let _audio_subsystem = sdl_context.audio()?; // TODO use
     let _image_context = sdl2::image::init(InitFlag::PNG | InitFlag::JPG)?; // does this just enable .png support like that?
 
     print_display_information(&video_subsystem);
@@ -93,13 +93,13 @@ pub fn print_display_information(video: &sdl2::VideoSubsystem) {
 
     println!("Information hardcoded for display_index 0!");
     println!("current display 0 hz, w, h: {} {} {}", video.current_display_mode(0).unwrap().refresh_rate,
-        video.current_display_mode(0).unwrap().w,
-        video.current_display_mode(0).unwrap().h
+             video.current_display_mode(0).unwrap().w,
+             video.current_display_mode(0).unwrap().h
     );
     println!("current_video_driver: {}", video.current_video_driver());
     println!("desktop display 0 hz, w, h: {} {} {}", video.desktop_display_mode(0).unwrap().refresh_rate,
-        video.desktop_display_mode(0).unwrap().w,
-        video.desktop_display_mode(0).unwrap().h
+             video.desktop_display_mode(0).unwrap().w,
+             video.desktop_display_mode(0).unwrap().h
     );
     println!("display 0 hz: {}", video.display_mode(0, 4).unwrap().refresh_rate);
     println!("display 0 name: {}", video.display_name(0).unwrap());
@@ -108,7 +108,7 @@ pub fn print_display_information(video: &sdl2::VideoSubsystem) {
 pub fn draw_nth_rectangle(canvas: &mut sdl2::render::WindowCanvas, x: i32, y: i32, x_nth: u32, y_nth: u32) {
     let width = SCREEN_WIDTH / x_nth;
     let height = SCREEN_HEIGHT / y_nth;
-    
+
     let mut x_border = 0;
     let mut y_border = 0;
     if width > 10 {
@@ -167,24 +167,24 @@ pub fn display_intro(canvas: &mut sdl2::render::WindowCanvas) {
 }
 
 pub fn display_rectangle_grid(canvas: &mut sdl2::render::WindowCanvas) {
-        let columns = 10;
-        let rows = 10;
-        for row in 0..rows {
-            for column in 0..columns {
-                if column == 0 {
-                    canvas.set_draw_color(Color::BLACK);
-                    canvas.clear();
-                }
-                canvas.set_draw_color(Color::WHITE);
-                let x_frac = 1.0 / (columns as f64) * (column as f64);
-                let y_frac = 1.0 / (rows as f64) * (row as f64);
-                let x = (SCREEN_WIDTH as f64 * x_frac).round() as i32;
-                let y = (SCREEN_HEIGHT as f64 * y_frac).round() as i32;
-                draw_nth_rectangle(canvas, x, y, columns, rows);
-                canvas.present();
-                // thread::sleep(Duration::from_millis(5));
+    let columns = 10;
+    let rows = 10;
+    for row in 0..rows {
+        for column in 0..columns {
+            if column == 0 {
+                canvas.set_draw_color(Color::BLACK);
+                canvas.clear();
             }
+            canvas.set_draw_color(Color::WHITE);
+            let x_frac = 1.0 / (columns as f64) * (column as f64);
+            let y_frac = 1.0 / (rows as f64) * (row as f64);
+            let x = (SCREEN_WIDTH as f64 * x_frac).round() as i32;
+            let y = (SCREEN_HEIGHT as f64 * y_frac).round() as i32;
+            draw_nth_rectangle(canvas, x, y, columns, rows);
+            canvas.present();
+            // thread::sleep(Duration::from_millis(5));
         }
+    }
 }
 
 pub fn display_flying_huhns(canvas: &mut sdl2::render::WindowCanvas) {
@@ -218,7 +218,7 @@ pub fn display_flying_huhns(canvas: &mut sdl2::render::WindowCanvas) {
     let mut source_rect_far_flying = Rect::new(temp_x as i32, 2, sprite_tile_size_far.0, sprite_tile_size_far.1);
     temp_x += FAR_WIDTH_SPRITE + 2;
     let mut source_rect_far_dying = Rect::new(temp_x as i32, 2, sprite_tile_size_far.0, sprite_tile_size_far.1);
-    let _ = temp_x;
+    drop(temp_x);
 
     // sprite animation destinations
     let mut dest_rect_close = Rect::new(0, 0, sprite_tile_size_close.0 * 4, sprite_tile_size_close.1 * 4);
