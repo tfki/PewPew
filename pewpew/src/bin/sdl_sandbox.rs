@@ -16,7 +16,7 @@ pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
 
     let video_subsystem = sdl_context.video()?;
-    let _audio_subsystem = sdl_context.audio()?; // TODO use
+    //let _audio_subsystem = sdl_context.audio()?; // TODO use
     let _image_context = sdl2::image::init(InitFlag::PNG | InitFlag::JPG)?; // does this just enable .png support like that?
 
     print_display_information(&video_subsystem);
@@ -218,7 +218,7 @@ pub fn display_flying_huhns(canvas: &mut sdl2::render::WindowCanvas) {
     let mut source_rect_far_flying = Rect::new(temp_x as i32, 2, sprite_tile_size_far.0, sprite_tile_size_far.1);
     temp_x += FAR_WIDTH_SPRITE + 2;
     let mut source_rect_far_dying = Rect::new(temp_x as i32, 2, sprite_tile_size_far.0, sprite_tile_size_far.1);
-    drop(temp_x);
+    let _ = temp_x;
 
     // sprite animation destinations
     let mut dest_rect_close = Rect::new(0, 0, sprite_tile_size_close.0 * 4, sprite_tile_size_close.1 * 4);

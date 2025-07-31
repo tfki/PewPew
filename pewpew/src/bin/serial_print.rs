@@ -1,33 +1,41 @@
-use pewpew::Message;
-use serial::SerialPort;
-use std::io::{BufRead, BufReader};
-use std::time::Duration;
 
-static PAYLOAD_LENGTH: usize = 7;
+// this is not only a serial reader
+// but also an example for error handling
+// reading from the serial port can cause two different kinds of errors
+// one error comes from opening the serial port, it is of type serial::Error
+// the other error can come from reading the port, this is a ReadPacketError
 
-pub fn main() -> ! {
-    const SETTINGS: serial::PortSettings = serial::PortSettings {
-        baud_rate: serial::Baud115200,
-        char_size: serial::Bits8,
-        parity: serial::ParityNone,
-        stop_bits: serial::Stop1,
-        flow_control: serial::FlowNone,
-    };
+// by creating an enum that can contain both, and that can convert both into an instance of itself
+// we can use the question mark operator in the main function to convert both errors
+// into a SerialPrinterError
 
-    let mut port = serial::open("/dev/serial/by-path/platform-vhci_hcd.0-usb-0:1:1.0").unwrap();
+use pewpew::serial::config::SerialConfig;
+use pewpew::serial::reader::{SerialReader, SerialReaderReadError};
 
-    port.configure(&SETTINGS).unwrap();
-    port.set_timeout(Duration::from_secs(1000)).unwrap();
+#[derive(Debug)]
+pub enum SerialPrintError {
+    PortOpenFailed(serial::Error),
+    ReadPacketFailed(SerialReaderReadError),
+}
 
-    let mut reader = BufReader::new(port);
-
-    println!();
-    loop {
-        let mut data = Vec::new();
-        reader.read_until(255_u8, &mut data).unwrap();
-
-        if let Ok(message) = Message::try_from(data.as_slice()) {
-            println!("{message:?}");
-        }
+impl From<serial::Error> for SerialPrintError {
+    fn from(value: serial::Error) -> Self {
+        SerialPrintError::PortOpenFailed(value)
     }
+}
+
+impl From<SerialReaderReadError> for SerialPrintError {
+    fn from(value: SerialReaderReadError) -> Self {
+        SerialPrintError::ReadPacketFailed(value)
+    }
+}
+
+pub fn main() -> Result<(), SerialPrintError> {
+    let reader = SerialReader::new(SerialConfig::default())?;
+
+    for packet in reader {
+        println!("{:?}", packet?);
+    }
+
+    Ok(())
 }
