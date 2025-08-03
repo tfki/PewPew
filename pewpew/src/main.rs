@@ -21,14 +21,14 @@ fn run_serial(sender: Sender<Packet>, cancel_token: Arc<CancelToken>) -> impl Fn
         let reader = match SerialConfig::default_from_user_settings() {
             Ok(cfg) => SerialReader::new(cfg),
             Err(e) => {
-                error!(target: "Serial Thread", "could not create Serial Config: {:?}, exiting", e);
+                error!(target: "Serial Thread", "could not create Serial Config: {e:?}, exiting");
                 cancel_token.cancel();
                 return;
             }
         };
 
         if let Err(e) = reader {
-            error!(target: "Serial Thread", "could not open serial port: {:?}, exiting", e);
+            error!(target: "Serial Thread", "could not open serial port: {e:?}, exiting");
             cancel_token.cancel();
             return;
         }
@@ -51,7 +51,7 @@ fn run_serial(sender: Sender<Packet>, cancel_token: Arc<CancelToken>) -> impl Fn
                     }
                 }
                 Err(e) => {
-                    warn!(target: "Serial Thread", "serial reader produced an error: {:?}", e)
+                    warn!(target: "Serial Thread", "serial reader produced an error: {e:?}")
                 }
             }
         }
