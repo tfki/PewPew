@@ -1,5 +1,6 @@
 use crate::user_settings;
 use serial::{BaudRate, CharSize, FlowControl, Parity, StopBits};
+use std::fmt::{Debug, Formatter};
 use std::time::Duration;
 
 #[derive(Debug)]
@@ -13,7 +14,38 @@ pub struct SerialConfig {
     pub port_path: &'static str,
 }
 
+pub enum SerialConfigError {
+    SerialPortIsNotSet,
+}
+
+impl Debug for SerialConfigError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SerialConfigError::SerialPortIsNotSet => write!(
+                f,
+                "SerialPortIsNotSet: go to user_settings.rs and set a default port"
+            ),
+        }
+    }
+}
+
 impl SerialConfig {
+    pub fn default() -> Result<Self, SerialConfigError> {
+        match user_settings::SERIAL_PORT {
+            None => Err(SerialConfigError::SerialPortIsNotSet),
+            Some(port) => Ok(SerialConfig {
+                baudrate: BaudRate::Baud115200,
+                char_size: CharSize::Bits8,
+                parity: Parity::ParityNone,
+                stop_bits: StopBits::Stop1,
+                flow_control: FlowControl::FlowNone,
+                // i wanted to use something like infinity for the timeout, but u64::MAX causes crashes
+                timeout: Duration::from_secs(100000),
+                port_path: port,
+            }),
+        }
+    }
+
     pub fn with_path(mut self, port_path: &'static str) -> Self {
         self.port_path = port_path;
         self
@@ -47,21 +79,5 @@ impl SerialConfig {
     pub fn with_char_size(mut self, char_size: CharSize) -> Self {
         self.char_size = char_size;
         self
-    }
-}
-
-impl Default for SerialConfig {
-    fn default() -> Self {
-        SerialConfig {
-            baudrate: BaudRate::Baud115200,
-            char_size: CharSize::Bits8,
-            parity: Parity::ParityNone,
-            stop_bits: StopBits::Stop1,
-            flow_control: FlowControl::FlowNone,
-            // i wanted to use something like infinity for the timeout, but u64::MAX causes crashes
-            timeout: Duration::from_secs(100000),
-            port_path: user_settings::SERIAL_PORT
-                .expect("go to user_settings.rs and set SERIAL_PORT"),
-        }
     }
 }
