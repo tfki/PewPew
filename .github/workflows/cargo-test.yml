@@ -12,6 +12,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Install sdl2
+      run: apt-get install libsdl2-dev
     - name: Build
       run: |
         output=$(cargo build --manifest-path pewpew/Cargo.toml --verbose)
