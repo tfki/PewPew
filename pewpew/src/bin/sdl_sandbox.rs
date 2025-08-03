@@ -4,7 +4,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::{Rect, Point};
 // use sdl2::render::Canvas;
 // use sdl2::video;
-use sdl2::image::{InitFlag, LoadSurface, LoadTexture}; // apt install libsdl2-image-dev
+use sdl2::image::{InitFlag, LoadTexture}; // apt install libsdl2-image-dev
 use std::time::Duration;
 use std::thread;
 use std::path::Path;
@@ -89,7 +89,7 @@ pub fn print_display_information(video: &sdl2::VideoSubsystem) {
     println!("disabled is_screen_saver_enabled: {}", video.is_screen_saver_enabled().to_string());
     video.enable_screen_saver();
     println!("enabled is_screen_saver_enabled: {}", video.is_screen_saver_enabled().to_string());
-    println!("");
+    println!();
 
     println!("Information hardcoded for display_index 0!");
     println!("current display 0 hz, w, h: {} {} {}", video.current_display_mode(0).unwrap().refresh_rate,
@@ -159,10 +159,10 @@ pub fn display_intro(canvas: &mut sdl2::render::WindowCanvas) {
         canvas.present();
 
         if huhn_in_hole_anim_counter >= 8 { // wait extra for slower anim
-            std::thread::sleep(Duration::from_millis((1000/60) * 5));
+            thread::sleep(Duration::from_millis((1000/60) * 5));
         }
 
-        std::thread::sleep(Duration::from_millis((1000/60) * 15));
+        thread::sleep(Duration::from_millis((1000/60) * 15));
     }
 }
 
@@ -209,16 +209,15 @@ pub fn display_flying_huhns(canvas: &mut sdl2::render::WindowCanvas) {
     let mut temp_x = 2;
     let mut source_rect_close_flying = Rect::new(temp_x as i32, 2, sprite_tile_size_close.0, sprite_tile_size_close.1);
     temp_x += CLOSE_WIDTH_SPRITE + 2;
-    let mut source_rect_close_dying = Rect::new(temp_x as i32, 2, sprite_tile_size_close.0, sprite_tile_size_close.1);
+    //let mut source_rect_close_dying = Rect::new(temp_x as i32, 2, sprite_tile_size_close.0, sprite_tile_size_close.1);
     temp_x += CLOSE_WIDTH_SPRITE + 2;
     let mut source_rect_medium_flying = Rect::new(temp_x as i32, 2, sprite_tile_size_medium.0, sprite_tile_size_medium.1);
     temp_x += MEDIUM_WIDTH_SPRITE + 2;
-    let mut source_rect_medium_dying = Rect::new(temp_x as i32, 2, sprite_tile_size_medium.0, sprite_tile_size_medium.1);
+    //let source_rect_medium_dying = Rect::new(temp_x as i32, 2, sprite_tile_size_medium.0, sprite_tile_size_medium.1);
     temp_x += MEDIUM_WIDTH_SPRITE + 2;
     let mut source_rect_far_flying = Rect::new(temp_x as i32, 2, sprite_tile_size_far.0, sprite_tile_size_far.1);
     temp_x += FAR_WIDTH_SPRITE + 2;
-    let mut source_rect_far_dying = Rect::new(temp_x as i32, 2, sprite_tile_size_far.0, sprite_tile_size_far.1);
-    drop(temp_x);
+    //let source_rect_far_dying = Rect::new(temp_x as i32, 2, sprite_tile_size_far.0, sprite_tile_size_far.1);
 
     // sprite animation destinations
     let mut dest_rect_close = Rect::new(0, 0, sprite_tile_size_close.0 * 4, sprite_tile_size_close.1 * 4);
@@ -276,6 +275,6 @@ pub fn display_flying_huhns(canvas: &mut sdl2::render::WindowCanvas) {
         ).unwrap();
         canvas.present();
 
-        std::thread::sleep(Duration::from_millis((1000/60) * 4));
+        thread::sleep(Duration::from_millis((1000/60) * 4));
     }
 }

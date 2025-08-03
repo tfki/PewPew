@@ -51,7 +51,7 @@ impl SerialConfig {
         self
     }
 
-    pub fn with_baudrate(mut self, baudrate: serial::BaudRate) -> Self {
+    pub fn with_baudrate(mut self, baudrate: BaudRate) -> Self {
         self.baudrate = baudrate;
         self
     }
