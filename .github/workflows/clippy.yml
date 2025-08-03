@@ -11,4 +11,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Clippy
-        run: cargo clippy --all-targets --all-features pewpew
+        run: cargo clippy --all-targets --all-features --manifest-path pewpew/Cargo.toml

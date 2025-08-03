@@ -13,6 +13,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build pewpew
+      run: cargo build --manifest-path pewpew/Cargo.toml
     - name: Run tests
       run: cargo test --verbose
