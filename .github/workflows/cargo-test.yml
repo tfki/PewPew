@@ -13,8 +13,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: |
-        output=$(cargo build --manifest-path pewpew/Cargo.toml 2>&1)
-        echo "$output"
+      run: cargo build --manifest-path pewpew/Cargo.toml
     - name: Run tests
       run: cargo test --verbose
