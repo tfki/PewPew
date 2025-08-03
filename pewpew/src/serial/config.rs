@@ -30,7 +30,7 @@ impl Debug for SerialConfigError {
 }
 
 impl SerialConfig {
-    pub fn default() -> Result<Self, SerialConfigError> {
+    pub fn default_from_user_settings() -> Result<Self, SerialConfigError> {
         match user_settings::SERIAL_PORT {
             None => Err(SerialConfigError::SerialPortIsNotSet),
             Some(port) => Ok(SerialConfig {

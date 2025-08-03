@@ -18,7 +18,7 @@ fn run_serial(sender: Sender<Packet>, cancel_token: Arc<CancelToken>) -> impl Fn
     // we do not need a "{ ... }" for the closure contents because the closure contains only one
     // statement, which is "loop"
     move || loop {
-        let reader = match SerialConfig::default() {
+        let reader = match SerialConfig::default_from_user_settings() {
             Ok(cfg) => SerialReader::new(cfg),
             Err(e) => {
                 error!(target: "Serial Thread", "could not create Serial Config: {:?}, exiting", e);

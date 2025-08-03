@@ -38,7 +38,7 @@ impl From<SerialConfigError> for SerialPrintError {
 }
 
 pub fn main() -> Result<(), SerialPrintError> {
-    let reader = SerialReader::new(SerialConfig::default()?)?;
+    let reader = SerialReader::new(SerialConfig::default_from_user_settings()?)?;
 
     for packet in reader {
         println!("{:?}", packet?);
