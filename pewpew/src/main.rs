@@ -3,11 +3,10 @@ use pewpew::cancel_token::CancelToken;
 use pewpew::serial::config::SerialConfig;
 use pewpew::serial::packet::Packet;
 use pewpew::serial::reader::SerialReader;
-use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{mpsc, Arc};
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
-fn run_serial(sender: Sender<Packet>, cancel_token: Arc<CancelToken>) -> impl FnOnce() {
+fn run_serial(sender: Sender<Packet>, cancel_token: CancelToken) -> impl FnOnce() {
     // this function does not run the code below
     // instead it returns a closure (or a lambda) that someone else can run
 
@@ -22,21 +21,18 @@ fn run_serial(sender: Sender<Packet>, cancel_token: Arc<CancelToken>) -> impl Fn
             Ok(cfg) => SerialReader::new(cfg),
             Err(e) => {
                 error!(target: "Serial Thread", "could not create Serial Config: {e:?}, exiting");
-                cancel_token.cancel();
                 return;
             }
         };
 
         if let Err(e) = reader {
             error!(target: "Serial Thread", "could not open serial port: {e:?}, exiting");
-            cancel_token.cancel();
             return;
         }
 
         for packet in reader.unwrap() {
             if cancel_token.was_canceled() {
                 info!(target: "Serial Tread", "exiting because of cancel token");
-                cancel_token.cancel();
                 return;
             }
 
@@ -46,7 +42,6 @@ fn run_serial(sender: Sender<Packet>, cancel_token: Arc<CancelToken>) -> impl Fn
                         // send only ever fails if the receiver does not exist anymore
                         // so there is no point in continuing
                         error!(target: "Serial Thread", "failed to send packet to gui thread, exiting");
-                        cancel_token.cancel();
                         return;
                     }
                 }
@@ -58,7 +53,7 @@ fn run_serial(sender: Sender<Packet>, cancel_token: Arc<CancelToken>) -> impl Fn
     }
 }
 
-fn run_gui(_receiver: Receiver<Packet>, cancel_token: Arc<CancelToken>) {
+fn run_gui(_receiver: Receiver<Packet>, cancel_token: CancelToken) {
     // TODO
     loop {
         if cancel_token.was_canceled() {
@@ -75,7 +70,7 @@ fn main() {
     // with a local time
     env_logger::init();
 
-    let (sender, receiver) = mpsc::channel::<Packet>();
+    let (sender, receiver) = channel::<Packet>();
     let cancelled = CancelToken::new();
 
     thread::spawn(run_serial(sender, cancelled.clone()));
