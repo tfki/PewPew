@@ -71,7 +71,7 @@ fn main() {
     env_logger::init();
 
     let (sender, receiver) = channel::<Packet>();
-    let cancelled = CancelToken::new();
+    let cancelled = CancelToken::default();
 
     thread::spawn(run_serial(sender, cancelled.clone()));
 
