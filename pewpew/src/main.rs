@@ -3,15 +3,13 @@ use pewpew::cancel_token::CancelToken;
 use pewpew::serial::config::SerialConfig;
 use pewpew::serial::packet::Packet;
 use pewpew::serial::reader::SerialReader;
-use std::alloc::System;
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::thread;
 
 use sdl2::event::Event;
-use sdl2::image::{InitFlag, LoadTexture};
+use sdl2::image::{InitFlag};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
-use std::thread;
 use std::time::{Duration, SystemTime};
 
 fn run_serial(sender: Sender<Packet>, cancel_token: CancelToken) -> impl FnOnce() {
