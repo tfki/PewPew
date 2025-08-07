@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug};
 
 pub const DELIMITER: u8 = 255;
 
