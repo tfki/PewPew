@@ -41,19 +41,41 @@
   - [ ] **LED** nach außen sichbar machen --> Glasfaser?
   - [ ] Halterung für board --> klicken, schrauben, pins?
 - [ ] Sensorboard
-  - [ ] GCU (Gun control Unit)
+  - GCU (Gun control Unit)
   - [ ] Nachlade-Gyro-Flick Erkennung
-  - [ ] LED
-    - rot leuchten bei 1sec schussdelay
-    - blinken wenn magazin leer
-  - [ ] schickt brightness bei änderung mit timestamp
-  - [ ] ID
-  - [ ] aperiodisch magazin (füllstand + max size) nachricht senden
+  - [ ] nach reload, Nachladenachricht senden (siehe Interfaces)
+  - LED
+    - [ ] rot leuchten bei 1sec schussdelay
+    - [ ] blinken wenn magazin leer
+  - [ ] schickt brightness bei änderung mit timestamp (siehe Interfaces)
+  - [ ] generiert irgendwie ID
+  - [ ] schickt Nachricht bei Schuss (siehe Interfaces)
 - [ ] Pregame lobby
-  - zeigt übrige schuss aller spieler an
+  - zeigt übrige schüsse aller spieler an
   - spiel geht los wenn alle volles mag haben
   - einmal schießen um lobby zu  betreten
-- [ ] launchpad
-  - concentrator
-  - empfängt alle GCU daten
-  - schickt daten per UART an Moorhuhn Control Unit (MCU) (PC)
+- [x] launchpad
+  - empfängt alle GCU daten (siehe Interfaces)
+  - schickt daten per UART an Moorhuhn Control Unit (MCU) (PC) (siehe Interfaces)
+
+### Interfaces
+ - #### Sensortag $\overset{\text{RF}}\rightarrow$ Launchpad
+    Frequenz undso sind wahrscheinlich egal, sollten halt beim Sensortag und Launchpad gleich sein. Kommunikation unterstützt drei verschiedene Nachrichten die über diesen Low-Freq RF shit versendet werden:
+    - Schuss
+
+      Wird immer dann gesendet, wenn ein Button am Sensortag gedrückt wird. Enthält die ID vom Sensortag, einen Timestamp, die Restmunition im Magazin und die Magazingröße
+    - Helligkeitsänderung
+
+      Wird immer dann gesendet, wenn das Sensortag einen Helligkeitswert misst, der sich vom vorherigen unterscheidet. Enthält die ID vom Sensortag, einen Timestamp und den neuen Helligkeitswert
+    - Reload
+
+      Wird immer dann gesendet, wenn das Sensortag die Reload-Geste erkannt hat und teilt der Desktop-Anwendung mit, dass die Munition wieder voll ist. Enthält ID vom Sensortag, Timestamp, Restmunition im Magazin und Magazingröße. Weil das hier ein Reload ist, sollte hier Restmunition == Magazingröße gelten.
+
+- ####  Launchpad $\overset{\text{Serial}}\rightarrow$ PC
+  Launchpad empfängt die Nachrichten vom Sensortag und leitet sie einfach 1:1 an den PC weiter.
+
+- #### PC-Serial $\overset{\text{?}}\rightarrow$ PC-GUI
+  PC-Serial ist obviously Teil von PC und parst die Nachrichten, die es als row Bytes empfängt in ein Rust-Enum. Nachrichten Schuss und Reload werden an PC-GUI weitergeleitet und Nachrichten vom Typ Helligkeitsänderungen gehen an PC-Hitreg
+
+- #### PC-GUI $\overset{\text{?}}\leftrightarrow$ PC-Hitreg
+  PC-GUI leitet Informationen über Flash-Sequence (welche Informationen genau?) and PC-Hitreg weiter. PC-Hitreg leitet nach Verarbeitung an PC-GUI weiter, wer, was getroffen hat.
