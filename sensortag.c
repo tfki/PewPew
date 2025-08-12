@@ -1,21 +1,21 @@
-
+/***** Includes *****/
+/* Standard C Libraries */
 #include <stdlib.h>
 #include <unistd.h>
-
-#include <ti/drivers/rf/RF.h>
-#include <ti/drivers/PIN.h>
-#include <ti/drivers/pin/PINCC26XX.h>
-
-#include DeviceFamily_constructPath(driverlib/rf_prop_mailbox.h)
-
-#include "Board.h"
-#include "smartrf_settings/smartrf_settings.h"
-
 #include <stdio.h>
 #include <string.h>
 
-#include <xdc/std.h>
-#include <xdc/runtime/System.h>
+/* TI Drivers */
+#include <ti/drivers/rf/RF.h>
+#include <ti/drivers/PIN.h>
+#include <ti/drivers/pin/PINCC26XX.h>
+#include <ti/drivers/PIN.h>
+#include <ti/display/Display.h>
+#include <ti/display/DisplayExt.h>
+#include <ti/drivers/UART.h>
+#include <ti/drivers/timer/GPTimerCC26XX.h>
+#include <ti/drivers/GPIO.h>
+#include <ti/devices/DeviceFamily.h>
 
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Task.h>
@@ -23,12 +23,13 @@
 #include <ti/sysbios/knl/Event.h>
 #include <ti/sysbios/knl/Clock.h>
 
-#include <ti/drivers/PIN.h>
-#include <ti/display/Display.h>
-#include <ti/display/DisplayExt.h>
-#include <ti/drivers/UART.h>
-#include <ti/drivers/timer/GPTimerCC26XX.h>
-#include <ti/drivers/GPIO.h>
+/* Driverlib Header files */
+#include DeviceFamily_constructPath(driverlib/cpu.h)
+#include DeviceFamily_constructPath(driverlib/sys_ctrl.h)
+#include DeviceFamily_constructPath(driverlib/rf_prop_mailbox.h)
+
+#include <xdc/std.h>
+#include <xdc/runtime/System.h>
 
 #include "sensors/SensorI2C.h"
 #include "sensors/SensorOpt3001.h"
@@ -36,9 +37,9 @@
 #include "sensors/SensorHdc1000.h"
 #include "sensors/SensorMpu9250.h"
 
-#include <ti/devices/DeviceFamily.h>
-#include DeviceFamily_constructPath(driverlib/cpu.h)
-#include DeviceFamily_constructPath(driverlib/sys_ctrl.h)
+#include "Board.h"
+#include "smartrf_settings/smartrf_settings.h"
+
 
 static uint16_t latestAdcValue;
 static float latestGyroValue[3];
@@ -149,7 +150,7 @@ static void rf_send_brightness_message(uint16_t brightness) {
 
     memcpy(&buffer[0], &my_id, 2);
     memcpy(&buffer[2], &time_counter, 4);
-    memcpy(&buffer[6], &id, 1); // 123 = brightness packet
+    memcpy(&buffer[6], &id, 1);
     memcpy(&buffer[7], &brightness, 2);
 
     for (int i = 0; i < length - 1; i++) {
