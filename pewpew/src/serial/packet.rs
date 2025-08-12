@@ -1,4 +1,4 @@
-use std::fmt::{Debug};
+use std::fmt::Debug;
 
 pub const DELIMITER: u8 = 255;
 
@@ -38,6 +38,17 @@ impl TryFrom<&[u8]> for Packet {
 
         match msg_type {
             1 => {
+                if value.len() != 8 {
+                    Err(MessageParseError::InvalidPacketLength)
+                } else {
+                    Ok(Packet {
+                        tag_id,
+                        timestamp,
+                        content: PacketContent::ButtonPressed,
+                    })
+                }
+            }
+            2 => {
                 if value.len() != 10 {
                     Err(MessageParseError::InvalidPacketLength)
                 } else {
@@ -54,17 +65,6 @@ impl TryFrom<&[u8]> for Packet {
                     })
                 }
             }
-            2 => {
-                if value.len() != 8 {
-                    Err(MessageParseError::InvalidPacketLength)
-                } else {
-                    Ok(Packet {
-                        tag_id,
-                        timestamp,
-                        content: PacketContent::ButtonPressed,
-                    })
-                }
-            }
             x => Err(MessageParseError::UnknownMessageCode(x)),
         }
     }
@@ -74,4 +74,137 @@ impl TryFrom<&[u8]> for Packet {
 pub enum PacketContent {
     ButtonPressed,
     Brightness(u16),
+}
+
+#[test]
+mod tests {
+    use crate::serial::packet::{MessageParseError, Packet, PacketContent};
+
+    #[test]
+    fn button_press_packets() {
+        {
+            let packet = Packet::try_from(
+                [
+                    0xFE_u8, 0xDC, // 2 bytes tag id (56574)
+                    0x12, 0x34, 0x56, 0x78, // 4 bytes timestamp (2018915346)
+                    0x01, // 1 bytes packet type
+                    0x00, // 1 byte for the delimiter, can be anything
+                          // the packet does not parse the delimiter, it just expects a byte to be there
+                ]
+                .as_slice(),
+            );
+            assert!(matches!(
+                packet,
+                Ok(Packet {
+                    tag_id: 56574,
+                    timestamp: 2018915346,
+                    content: PacketContent::ButtonPressed,
+                })
+            ));
+        }
+
+        {
+            let packet = Packet::try_from(
+                [
+                    0xCD_u8, 0xFE, // 2 bytes tag id (65229)
+                    0x78, 0x56, 0x34, 0x12, // 4 bytes timestamp (305419896)
+                    0x01, // 1 bytes packet type
+                    0xFF, // 1 byte for the delimiter, can be anything here
+                          // the packet does not parse the delimiter, it just expects a byte to be there
+                ]
+                .as_slice(),
+            );
+            assert!(matches!(
+                packet,
+                Ok(Packet {
+                    tag_id: 65229,
+                    timestamp: 305419896,
+                    content: PacketContent::ButtonPressed,
+                })
+            ));
+        }
+    }
+
+    #[test]
+    fn brightness_packets() {
+        {
+            let packet = Packet::try_from(
+                [
+                    0xCD_u8, 0xFE, // 2 bytes tag id (65229)
+                    0x78, 0x56, 0x34, 0x12, // 4 bytes timestamp (305419896)
+                    0x02, // 1 bytes packet type
+                    0xB0, 0x0B, // 2 bytes brightness value (2992)
+                    0xFF, // 1 byte for the delimiter, can be anything here
+                          // the packet does not parse the delimiter, it just expects a byte to be there
+                ]
+                .as_slice(),
+            );
+            assert!(matches!(
+                packet,
+                Ok(Packet {
+                    tag_id: 65229,
+                    timestamp: 305419896,
+                    content: PacketContent::Brightness(2992),
+                })
+            ));
+        }
+
+        {
+            let packet = Packet::try_from(
+                [
+                    0xCD_u8, 0xFE, // 2 bytes tag id (65229)
+                    0x78, 0x56, 0x34, 0x12, // 4 bytes timestamp (305419896)
+                    0x02, // 1 bytes packet type
+                    0xBA, 0xAD, // 2 bytes brightness value (44474)
+                    0xFF, // 1 byte for the delimiter, can be anything here
+                          // the packet does not parse the delimiter, it just expects a byte to be there
+                ]
+                .as_slice(),
+            );
+            assert!(matches!(
+                packet,
+                Ok(Packet {
+                    tag_id: 65229,
+                    timestamp: 305419896,
+                    content: PacketContent::Brightness(44474),
+                })
+            ));
+        }
+    }
+
+    #[test]
+    fn invalid_packet_types() {
+        let invalid_codes = vec![0, /* 1, */ /* 2, */ 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        for code in invalid_codes {
+            let packet = Packet::try_from(
+                [
+                    0xCD_u8, 0xFE, // 2 bytes tag id (65229)
+                    0x78, 0x56, 0x34, 0x12, // 4 bytes timestamp (305419896)
+                    code, // 1 bytes packet type THAT DOES NOT EXIST
+                    0xBA, 0xAD, // 2 bytes brightness value (44474)
+                    0xFF, // 1 byte for the delimiter, can be anything here
+                          // the packet does not parse the delimiter, it just expects a byte to be there
+                ]
+                .as_slice(),
+            );
+            assert!(matches!(
+                packet,
+                Err(MessageParseError::UnknownMessageCode(3))
+            ));
+        }
+    }
+
+    #[test]
+    fn invalid_length_packets() {
+        let invalid_packet_lengths = vec![
+            0, 1, 2, 3, 4, 5, 6, 7, /* 8, */ 9, /* 10, */ 11, 12, 13, 14, 15, 16,
+        ];
+        for length in invalid_packet_lengths {
+            let packet = Packet::try_from(vec![0_u8, length].as_slice());
+            assert!(matches!(
+                packet,
+                Err(MessageParseError::InvalidPacketLength)
+            ));
+        }
+    }
 }
