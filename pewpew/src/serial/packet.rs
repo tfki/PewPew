@@ -76,7 +76,7 @@ pub enum PacketContent {
     Brightness(u16),
 }
 
-#[test]
+#[cfg(test)]
 mod tests {
     use crate::serial::packet::{MessageParseError, Packet, PacketContent};
 
