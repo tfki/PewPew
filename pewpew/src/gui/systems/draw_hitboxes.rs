@@ -5,7 +5,7 @@ use sdl2::pixels::Color;
 use crate::gui::components::{Hitbox, Location};
 
 pub fn run(canvas: &mut WindowCanvas, world: &mut World) {
-    for (id, (hitbox, location)) in world.query_mut::<(&Hitbox, &Location)>() {
+    for (_id, (hitbox, location)) in world.query_mut::<(&Hitbox, &Location)>() {
         canvas.set_draw_color(Color::WHITE);
         canvas
             .fill_rect(Rect::from_center(

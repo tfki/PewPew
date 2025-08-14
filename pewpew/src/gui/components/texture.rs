@@ -19,7 +19,6 @@ pub struct Builder {
     scale: f32,
     rotation_deg: f64,
     frame_advance_interval: Option<Duration>,
-    last_frame_time: Option<SystemTime>,
 }
 
 impl Builder {
@@ -32,7 +31,6 @@ impl Builder {
             scale: 1.0,
             rotation_deg: 0.0,
             frame_advance_interval: None,
-            last_frame_time: None,
         }
     }
 
