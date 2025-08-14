@@ -4,7 +4,7 @@ pub const DELIMITER: u8 = 255;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Packet {
-    pub tag_id: u16,
+    pub sensortag_id: u16,
     pub timestamp: u32,
     pub content: PacketContent,
 }
@@ -38,17 +38,6 @@ impl TryFrom<&[u8]> for Packet {
 
         match msg_type {
             1 => {
-                if value.len() != 8 {
-                    Err(MessageParseError::InvalidPacketLength)
-                } else {
-                    Ok(Packet {
-                        tag_id,
-                        timestamp,
-                        content: PacketContent::ButtonPressed,
-                    })
-                }
-            }
-            2 => {
                 if value.len() != 10 {
                     Err(MessageParseError::InvalidPacketLength)
                 } else {
@@ -59,9 +48,20 @@ impl TryFrom<&[u8]> for Packet {
                     );
 
                     Ok(Packet {
-                        tag_id,
+                        sensortag_id: tag_id,
                         timestamp,
                         content: PacketContent::Brightness(brightness),
+                    })
+                }
+            }
+            2 => {
+                if value.len() != 8 {
+                    Err(MessageParseError::InvalidPacketLength)
+                } else {
+                    Ok(Packet {
+                        sensortag_id: tag_id,
+                        timestamp,
+                        content: PacketContent::ButtonPressed,
                     })
                 }
             }
@@ -87,7 +87,7 @@ mod tests {
                 [
                     0xFE_u8, 0xDC, // 2 bytes tag id (56574)
                     0x12, 0x34, 0x56, 0x78, // 4 bytes timestamp (2018915346)
-                    0x01, // 1 bytes packet type
+                    0x02, // 1 bytes packet type
                     0x00, // 1 byte for the delimiter, can be anything
                           // the packet does not parse the delimiter, it just expects a byte to be there
                 ]
@@ -96,7 +96,7 @@ mod tests {
             assert!(matches!(
                 packet,
                 Ok(Packet {
-                    tag_id: 56574,
+                    sensortag_id: 56574,
                     timestamp: 2018915346,
                     content: PacketContent::ButtonPressed,
                 })
@@ -108,7 +108,7 @@ mod tests {
                 [
                     0xCD_u8, 0xFE, // 2 bytes tag id (65229)
                     0x78, 0x56, 0x34, 0x12, // 4 bytes timestamp (305419896)
-                    0x01, // 1 bytes packet type
+                    0x02, // 1 bytes packet type
                     0xFF, // 1 byte for the delimiter, can be anything here
                           // the packet does not parse the delimiter, it just expects a byte to be there
                 ]
@@ -117,7 +117,7 @@ mod tests {
             assert!(matches!(
                 packet,
                 Ok(Packet {
-                    tag_id: 65229,
+                    sensortag_id: 65229,
                     timestamp: 305419896,
                     content: PacketContent::ButtonPressed,
                 })
@@ -132,7 +132,7 @@ mod tests {
                 [
                     0xCD_u8, 0xFE, // 2 bytes tag id (65229)
                     0x78, 0x56, 0x34, 0x12, // 4 bytes timestamp (305419896)
-                    0x02, // 1 bytes packet type
+                    0x01, // 1 bytes packet type
                     0xB0, 0x0B, // 2 bytes brightness value (2992)
                     0xFF, // 1 byte for the delimiter, can be anything here
                           // the packet does not parse the delimiter, it just expects a byte to be there
@@ -142,7 +142,7 @@ mod tests {
             assert!(matches!(
                 packet,
                 Ok(Packet {
-                    tag_id: 65229,
+                    sensortag_id: 65229,
                     timestamp: 305419896,
                     content: PacketContent::Brightness(2992),
                 })
@@ -154,7 +154,7 @@ mod tests {
                 [
                     0xCD_u8, 0xFE, // 2 bytes tag id (65229)
                     0x78, 0x56, 0x34, 0x12, // 4 bytes timestamp (305419896)
-                    0x02, // 1 bytes packet type
+                    0x01, // 1 bytes packet type
                     0xBA, 0xAD, // 2 bytes brightness value (44474)
                     0xFF, // 1 byte for the delimiter, can be anything here
                           // the packet does not parse the delimiter, it just expects a byte to be there
@@ -164,7 +164,7 @@ mod tests {
             assert!(matches!(
                 packet,
                 Ok(Packet {
-                    tag_id: 65229,
+                    sensortag_id: 65229,
                     timestamp: 305419896,
                     content: PacketContent::Brightness(44474),
                 })

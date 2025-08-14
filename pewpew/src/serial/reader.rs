@@ -7,7 +7,6 @@ use crate::serial::config::SerialConfig;
 pub struct SerialReader {
     reader: BufReader<SystemPort>,
     buffer: Vec<u8>,
-    discard_broken_packets: bool,
 }
 
 impl SerialReader {
@@ -30,7 +29,6 @@ impl SerialReader {
         Ok(SerialReader {
             reader,
             buffer: Vec::new(),
-            discard_broken_packets: true,
         })
     }
 }
@@ -56,7 +54,6 @@ impl Iterator for SerialReader {
         } else {
             match Packet::try_from(self.buffer.as_slice()) {
                 Ok(packet) => Ok(packet),
-                Err(_) if self.discard_broken_packets => self.next().unwrap(),
                 Err(e) => Err(SerialReaderReadError::MessageParseError(e)),
             }
         })
