@@ -1,3 +1,7 @@
+pub mod components;
+pub mod systems;
+pub mod resources;
+
 use crate::cancel_token::CancelToken;
 use crate::comm::message::SerialToGuiKind;
 use crate::comm::GuiComm;
