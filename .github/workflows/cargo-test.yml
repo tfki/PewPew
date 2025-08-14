@@ -1,0 +1,16 @@
+on: push
+name: Cargo test
+
+jobs:
+  cargo_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apt update
+        run: sudo apt update -y
+      - name: Install sdl2
+        run: sudo apt install -y libsdl2-dev libsdl2-image-dev
+      - name: Run Tests
+        run: |
+          output=$(cargo test --manifest-path pewpew/Cargo.toml)
+          echo "$output"
