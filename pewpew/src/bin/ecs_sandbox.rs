@@ -1,25 +1,12 @@
 use hecs::World;
+use pewpew::gui::components::{texture, Hitbox, Location};
+use pewpew::gui::resources::Resources;
+use pewpew::gui::systems;
 use sdl2::image::{InitFlag, LoadTexture};
 use sdl2::pixels::Color;
-use sdl2::rect::{Point, Rect};
 use std::path::Path;
 use std::thread;
-use std::time::Duration;
-
-#[derive(Debug)]
-struct AnimatedTexture {
-    image_id: usize,
-    num_frames: u32,
-    current_frame: u32,
-    repeat: bool,
-    scale: f32,
-    rotation_deg: f64,
-}
-
-struct Location {
-    x: u32,
-    y: u32,
-}
+use std::time::{Duration, SystemTime};
 
 const SCREEN_WIDTH: u32 = 1920;
 const SCREEN_HEIGHT: u32 = 1080;
@@ -60,90 +47,70 @@ pub fn main() -> Result<(), String> {
 }
 
 pub fn display_intro(canvas: &mut sdl2::render::WindowCanvas) {
-    let mut world = World::new();
-
-    // world.spawn((
-    //     AnimatedTexture {
-    //         image_id: 0,
-    //         num_frames: 14,
-    //         current_frame: 0,
-    //         repeat: true,
-    //         scale: 4.0,
-    //         rotation_deg: 90.0,
-    //     },
-    //     Location { x: 100, y: 100 },
-    // ));
-    world.spawn((
-        AnimatedTexture {
-            image_id: 0,
-            num_frames: 14,
-            current_frame: 0,
-            repeat: false,
-            scale: 1.0,
-            rotation_deg: 0.0,
-        },
-        Location { x: 100, y: 100 },
-    ));
-
     let texture_creator = canvas.texture_creator();
     {
-        let mut all_images = Vec::new();
+        let mut resources = Resources::default();
 
-        all_images.push(
+        resources.images.push(
             texture_creator
                 .load_texture(Path::new("ressources/Huhn_in_Hole.png"))
                 .unwrap(),
         ); // https://onlinetools.com/image/remove-specific-color-from-image
 
-        for _ in 0..20 {
-            canvas.clear();
-            let mut to_be_despawned = Vec::new();
+        let mut world = World::new();
 
-            for (id, (anim_texture, location)) in
-                world.query_mut::<(&mut AnimatedTexture, &Location)>()
-            {
-                let sprite = &all_images[anim_texture.image_id];
-                let tile_size = (
-                    sprite.query().width,
-                    sprite.query().height / anim_texture.num_frames,
-                );
+        for x in 1..(SCREEN_WIDTH / 100) {
+            for y in 1..(SCREEN_HEIGHT / 100) {
+                let texture = texture::Builder::new(0)
+                    .with_num_frames(14)
+                    .looping()
+                    .with_frame_advance_interval(Duration::from_millis((50 * (1 + x + y)) as u64))
+                    .build();
+                let location = Location {
+                    x: x * 100,
+                    y: y * 100,
+                };
 
-                // set the current frame by 'scrolling' vertically
-                let source_rect = Rect::new(0, (anim_texture.current_frame * tile_size.1) as i32, tile_size.0, tile_size.1);
-
-                let dest_rect = Rect::from_center(
-                    Point::new(location.x as i32, location.y as i32),
-                    (tile_size.0 as f32 * anim_texture.scale) as u32,
-                    (tile_size.1 as f32 * anim_texture.scale) as u32,
-                );
-
-                canvas
-                    .copy_ex(
-                        &all_images[anim_texture.image_id],
-                        Some(source_rect),
-                        Some(dest_rect),
-                        anim_texture.rotation_deg,
-                        None,
-                        false,
-                        false,
-                    )
-                    .unwrap();
-
-                if anim_texture.current_frame < anim_texture.num_frames {
-                    anim_texture.current_frame += 1;
-                } else if anim_texture.repeat {
-                    anim_texture.current_frame = 0;
+                if (x + y) % 2 == 0 {
+                    world.spawn((texture, location));
                 } else {
-                    to_be_despawned.push(id);
+                    world.spawn((
+                        texture,
+                        location,
+                        Hitbox {
+                            width: 100,
+                            height: 100,
+                        },
+                    ));
                 }
             }
+        }
 
-            for id in to_be_despawned {
-                world.despawn(id).unwrap();
+        {
+            for frame in 0..1000 {
+                let frame_start = SystemTime::now();
+
+                canvas.set_draw_color(Color::BLACK);
+                canvas.clear();
+
+                if frame % 100 == 0 {
+                    // do nothing, black screen
+                } else if (frame + 1) % 100 == 0 || (frame + 2) % 100 == 0 || (frame + 3) % 100 == 0 {
+                    // then, for three frames, show hitboxes
+                    systems::draw_hitboxes::run(canvas, &mut world);
+                } else {
+                    systems::draw_textures::run(canvas, &mut world, &mut resources);
+                }
+
+                canvas.present();
+
+                let frame_end = SystemTime::now();
+                let frame_duration = frame_end.duration_since(frame_start).unwrap();
+                let wait_duration = Duration::from_millis(33_u128.saturating_sub(frame_duration.as_millis()) as u64);
+                println!("frame took {frame_duration:?}, waiting {wait_duration:?} until next frame");
+
+                thread::sleep(wait_duration);
             }
-
-            canvas.present();
-            thread::sleep(Duration::from_millis(150));
         }
     }
 }
