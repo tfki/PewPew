@@ -2,7 +2,7 @@ on: push
 name: Cargo test
 
 jobs:
-  cargo-test:
+  cargo_test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
