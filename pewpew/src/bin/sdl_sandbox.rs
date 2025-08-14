@@ -17,7 +17,7 @@ pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
 
     let video_subsystem = sdl_context.video()?;
-    let _audio_subsystem = sdl_context.audio()?; // TODO use
+    //let _audio_subsystem = sdl_context.audio()?; // TODO use
     let _image_context = sdl2::image::init(InitFlag::PNG | InitFlag::JPG)?; // does this just enable .png support like that?
 
     print_display_information(&video_subsystem);
