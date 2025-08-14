@@ -189,7 +189,7 @@ mod tests {
             );
             assert!(matches!(
                 packet,
-                Err(MessageParseError::UnknownMessageCode(3))
+                Err(MessageParseError::UnknownMessageCode(code))
             ));
         }
     }
