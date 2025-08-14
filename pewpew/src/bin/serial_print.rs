@@ -33,7 +33,7 @@ pub fn main() -> Result<(), SerialPrintError> {
     let reader = SerialReader::new(SerialConfig::default_from_user_settings()?)?;
 
     for packet in reader {
-        println!("{:?}", packet);
+        println!("{packet:?}");
     }
 
     Ok(())
