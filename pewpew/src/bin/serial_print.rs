@@ -13,12 +13,12 @@ use pewpew::serial::reader::{SerialReader};
 
 #[derive(Debug)]
 pub enum SerialPrintError {
-    PortOpenFailed(serial::Error),
+    PortOpenFailed(serialport::Error),
     CreateConfigFailed(SerialConfigError),
 }
 
-impl From<serial::Error> for SerialPrintError {
-    fn from(value: serial::Error) -> Self {
+impl From<serialport::Error> for SerialPrintError {
+    fn from(value: serialport::Error) -> Self {
         SerialPrintError::PortOpenFailed(value)
     }
 }

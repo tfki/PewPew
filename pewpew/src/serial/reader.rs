@@ -1,30 +1,22 @@
 use std::io::{BufRead, BufReader};
-use serial::{SerialPort, SystemPort};
+use std::time::Duration;
+use serialport::SerialPort;
 use crate::serial::packet;
 use crate::serial::packet::{MessageParseError, Packet};
 use crate::serial::config::SerialConfig;
 
 pub struct SerialReader {
-    reader: BufReader<SystemPort>,
+    reader: BufReader<Box<dyn SerialPort>>,
     buffer: Vec<u8>,
 }
 
 impl SerialReader {
-    pub fn new(config: SerialConfig) -> Result<SerialReader, serial::Error> {
-        let settings: serial::PortSettings = serial::PortSettings {
-            baud_rate: config.baudrate,
-            char_size: config.char_size,
-            parity: config.parity,
-            stop_bits: config.stop_bits,
-            flow_control: config.flow_control,
-        };
+    pub fn new(config: SerialConfig) -> Result<SerialReader, serialport::Error> {
+        let port = serialport::new(config.port_path, config.baudrate)
+            .timeout(Duration::from_millis(10000))
+            .open();
 
-        let mut port = serial::open(config.port_path)?;
-
-        port.configure(&settings)?;
-        port.set_timeout(config.timeout)?;
-
-        let reader = BufReader::new(port);
+        let reader = BufReader::new(port?);
 
         Ok(SerialReader {
             reader,
