@@ -1,101 +1,104 @@
 pub mod components;
-pub mod systems;
+mod gui_context;
 pub mod resources;
+pub mod systems;
 
-use crate::cancel_token::CancelToken;
-use crate::comm::message::SerialToGuiKind;
+use crate::common::cancel_token::CancelToken;
 use crate::comm::GuiComm;
-use log::info;
-use sdl2::event::Event;
-use sdl2::image::InitFlag;
-use sdl2::keyboard::Keycode;
+use crate::gui::components::movement::By;
+use crate::gui::components::{movement, texture, Hitbox, Point};
+use crate::gui::gui_context::GuiContext;
+use crate::gui::resources::Resources;
+use hecs::World;
+use sdl2::image::LoadTexture;
 use sdl2::pixels::Color;
+use std::path::Path;
 use std::thread;
 use std::time::{Duration, SystemTime};
 
 pub fn run(comm: GuiComm, cancel_token: CancelToken) {
-    let sdl_context = sdl2::init().unwrap();
+    let mut gui_context = GuiContext::new(gui_context::Settings::default(), cancel_token, comm);
 
-    let video = sdl_context.video().unwrap();
-    let _image_context = sdl2::image::init(InitFlag::PNG | InitFlag::JPG).unwrap();
-    let refresh_rate = video.desktop_display_mode(0).unwrap().refresh_rate;
-    let screen_width = video.desktop_display_mode(0).unwrap().w;
-    let screen_height = video.desktop_display_mode(0).unwrap().h;
+    display_intro(&mut gui_context);
+}
 
-    let window = video
-        .window(
-            "PewPew sdl-sandbox",
-            screen_width as u32,
-            screen_height as u32,
-        )
-        .fullscreen_desktop()
-        .opengl()
-        .build()
-        .map_err(|e| e.to_string())
-        .unwrap();
+fn display_intro(gui_context: &mut GuiContext) {
+    let texture_creator = gui_context.canvas().texture_creator();
+    {
+        let mut resources = Resources::default();
 
-    let mut canvas = window
-        .into_canvas()
-        .present_vsync() //< this means the screen cannot
-        // render faster than your display rate (usually 60Hz or 144Hz)
-        // .software()
-        .build()
-        .map_err(|e| e.to_string())
-        .unwrap();
+        resources.images.push(
+            texture_creator
+                .load_texture(Path::new("ressources/Huhn_in_Hole.png"))
+                .unwrap(),
+        ); // https://onlinetools.com/image/remove-specific-color-from-image
 
-    canvas.set_draw_color(Color::BLACK);
-    canvas.clear();
-    canvas.present();
-    let last_present = SystemTime::now();
-    let mut event_pump = sdl_context.event_pump().unwrap();
+        let mut world = World::new();
 
-    'gui_running: loop {
-        if cancel_token.was_canceled() {
-            info!(target: "Gui Thread", "exiting because of cancel token");
-            return;
-        }
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => {
-                    info!(target: "Gui Thread", "exiting because window was closed");
-                    break 'gui_running;
-                }
-                _ => {}
+        for x in 0..5 {
+            for y in 0..5 {
+                let anchor = Point {
+                    x: x * 200,
+                    y: y * 200,
+                };
+                let texture = texture::Builder::new(0, anchor)
+                    .with_num_frames(14)
+                    .looping()
+                    .with_frame_advance_interval(Duration::from_millis((50 * (1 + x + y)) as u64))
+                    .build();
+
+                let movement = movement::Builder::new(
+                    By {
+                        x: (x + y) / 2,
+                        y: 0,
+                    },
+                    Duration::from_millis(33),
+                )
+                .build();
+
+                world.spawn((
+                    texture,
+                    Hitbox {
+                        anchor,
+                        width: 200,
+                        height: 200,
+                    },
+                    movement,
+                ));
             }
         }
 
-        if SystemTime::now().duration_since(last_present).unwrap()
-            > Duration::from_secs_f64(1.0 / refresh_rate as f64)
+        gui_context.canvas().set_draw_color(Color::BLACK);
+        gui_context.canvas().clear();
+        gui_context.canvas().present();
+
         {
-            match comm.recv_from_serial() {
-                Ok(message) => {
-                    match message.kind {
-                        SerialToGuiKind::Reload => {}
-                        SerialToGuiKind::Shot => {}
-                    }
+            for frame in 0..500 {
+                let frame_start = SystemTime::now();
+
+                gui_context.canvas().set_draw_color(Color::BLACK);
+                gui_context.canvas().clear();
+
+                if frame % 100 == 0 {
+                    // then, show flashing sequence
+                    // this takes how many ever frames it needs O(ceil(log2(|hitboxes|)))
+                    systems::flashing_sequence::run(gui_context, &mut world, true);
+                } else {
+                    systems::update_movements::run(&mut world);
+                    systems::update_animated_textures::run(&mut world);
+                    systems::draw_textures::run(gui_context.canvas(), &mut world, &mut resources);
                 }
-                Err(_) => {
-                    // serial is dead
-                    // just do nothing, because if serial is dead
-                    // cancel token was cancelled too
-                }
+
+                gui_context.canvas().present();
+
+                let frame_end = SystemTime::now();
+                let frame_duration = frame_end.duration_since(frame_start).unwrap();
+                let wait_duration = Duration::from_millis(
+                    33_u128.saturating_sub(frame_duration.as_millis()) as u64,
+                );
+
+                thread::sleep(wait_duration);
             }
-            /*
-            if let Ok(_recv) = receiver.try_recv() {
-                canvas.set_draw_color(Color::WHITE);
-                // do something with recv
-            } else {
-                canvas.set_draw_color(Color::BLACK);
-            }
-            canvas.clear();
-            canvas.present();
-            last_present = SystemTime::now();
-            */
         }
-        thread::sleep(Duration::from_millis(1));
     }
 }

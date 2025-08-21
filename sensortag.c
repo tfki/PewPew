@@ -241,6 +241,9 @@ void *main_thread(void *arg0)
         /* Read sensor */
         SensorOpt3001_read(&raw_lux);
 
+        // the value that is reported by the sensor only ever changes
+        // after 100ms (according to its datasheet and tests)
+        // so we only need to send a new brightness, once it changes
         if (raw_lux != last_raw_lux) {
             rf_send_brightness_message(raw_lux);
             last_raw_lux = raw_lux;

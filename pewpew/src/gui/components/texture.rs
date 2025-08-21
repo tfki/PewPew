@@ -1,33 +1,37 @@
 use std::time::{Duration, SystemTime};
+use crate::gui::components::Point;
 
 pub struct Texture {
+    pub anchor: Point,
     pub image_id: usize,
     pub num_frames: u32,
-    pub current_frame: u32,
+    pub current_keyframe: u32,
     pub repeat: bool,
     pub scale: f32,
     pub rotation_deg: f64,
-    pub frame_advance_interval: Duration,
-    pub last_frame_time: Option<SystemTime>,
+    pub keyframe_duration: Duration,
+    pub last_keyframe_change_time: Option<SystemTime>,
 }
 
 pub struct Builder {
+    anchor: Point,
     image_id: usize,
     num_frames: u32,
     current_frame: u32,
-    repeat: bool,
+    looping: bool,
     scale: f32,
     rotation_deg: f64,
     frame_advance_interval: Option<Duration>,
 }
 
 impl Builder {
-    pub fn new(image_id: usize) -> Self {
+    pub fn new(image_id: usize, anchor: Point) -> Self {
         Builder {
+            anchor,
             image_id,
             num_frames: 1,
             current_frame: 0,
-            repeat: false,
+            looping: false,
             scale: 1.0,
             rotation_deg: 0.0,
             frame_advance_interval: None,
@@ -40,7 +44,7 @@ impl Builder {
     }
 
     pub fn looping(mut self) -> Self {
-        self.repeat = true;
+        self.looping = true;
         self
     }
 
@@ -61,14 +65,15 @@ impl Builder {
 
     pub fn build(self) -> Texture {
         Texture {
+            anchor: self.anchor,
             image_id: self.image_id,
             num_frames: self.num_frames,
-            current_frame: self.current_frame,
-            repeat: self.repeat,
+            current_keyframe: self.current_frame,
+            repeat: self.looping,
             scale: self.scale,
             rotation_deg: self.rotation_deg,
-            frame_advance_interval: self.frame_advance_interval.unwrap_or(Duration::from_secs(u64::MAX)),
-            last_frame_time: None,
+            keyframe_duration: self.frame_advance_interval.unwrap_or(Duration::from_secs(u64::MAX)),
+            last_keyframe_change_time: None,
         }
     }
 }

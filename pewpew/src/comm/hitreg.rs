@@ -1,11 +1,11 @@
-use crate::comm::message::{GuiToHitReg, HitregToGui, SerialToHitReg, ToHitreg};
+use crate::comm::message::{GuiToHitreg, HitregToGui, SerialToHitReg, ToHitreg};
 use std::sync::mpsc::{Receiver, RecvError, SendError, Sender, TryRecvError};
 use std::time::Duration;
 
 pub struct HitregComm {
     hitreg_to_gui_tx: Sender<HitregToGui>,
     serial_to_hitreg_rx: Receiver<SerialToHitReg>,
-    gui_to_hitreg_rx: Receiver<GuiToHitReg>,
+    gui_to_hitreg_rx: Receiver<GuiToHitreg>,
 
     // there is a recv method that uses try_recv on serial_to_hitreg and gui_to_hitreg
     // if there are a lot of messages from serial, this will 'starve' messages from gui
@@ -17,7 +17,7 @@ impl HitregComm {
     pub fn new(
         hitreg_to_gui_tx: Sender<HitregToGui>,
         serial_to_hitreg_rx: Receiver<SerialToHitReg>,
-        gui_to_hitreg_rx: Receiver<GuiToHitReg>,
+        gui_to_hitreg_rx: Receiver<GuiToHitreg>,
     ) -> Self {
         Self {
             hitreg_to_gui_tx,
@@ -39,11 +39,11 @@ impl HitregComm {
         self.serial_to_hitreg_rx.try_recv()
     }
 
-    pub fn recv_from_gui(&self) -> Result<GuiToHitReg, RecvError> {
+    pub fn recv_from_gui(&self) -> Result<GuiToHitreg, RecvError> {
         self.gui_to_hitreg_rx.recv()
     }
 
-    pub fn try_recv_from_gui(&self) -> Result<GuiToHitReg, TryRecvError> {
+    pub fn try_recv_from_gui(&self) -> Result<GuiToHitreg, TryRecvError> {
         self.gui_to_hitreg_rx.try_recv()
     }
 

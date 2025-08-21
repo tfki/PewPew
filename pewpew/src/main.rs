@@ -1,4 +1,4 @@
-use pewpew::cancel_token::CancelToken;
+use pewpew::common::cancel_token::CancelToken;
 use std::thread;
 use pewpew::{comm, gui, hitreg};
 

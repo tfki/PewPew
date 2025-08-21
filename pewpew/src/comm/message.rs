@@ -1,3 +1,6 @@
+use hecs::Entity;
+use std::time::SystemTime;
+
 #[derive(Debug, Clone)]
 pub enum SerialToGuiKind {
     Reload,
@@ -27,14 +30,19 @@ pub enum FromSerial {
 }
 
 #[derive(Debug, Clone)]
-pub struct GuiToHitReg {}
+pub enum GuiToHitreg {
+    FlashingSequenceStart{num_frames: u32, sequences: Vec<(Entity, Vec<bool>)>},
+    Frame(SystemTime),
+}
 
 #[derive(Debug, Clone)]
-pub struct HitregToGui {}
+pub enum HitregToGui {
+    Result(Option<Entity>),
+}
 
 #[derive(Debug, Clone)]
 pub enum ToHitreg {
-    FromGui(GuiToHitReg),
+    FromGui(GuiToHitreg),
     FromSerial(SerialToHitReg),
 }
 

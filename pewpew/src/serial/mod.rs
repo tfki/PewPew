@@ -2,7 +2,7 @@ pub mod config;
 pub mod packet;
 pub mod reader;
 
-use crate::cancel_token::CancelToken;
+use crate::common::cancel_token::CancelToken;
 use crate::comm::message::{SerialToGui, SerialToGuiKind, SerialToHitReg};
 use crate::comm::serial::SerialComm;
 use crate::serial::config::SerialConfig;

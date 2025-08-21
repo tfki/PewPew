@@ -1,11 +1,26 @@
-pub mod texture;
+use std::ops::Add;
 
-pub struct Hitbox {
-    pub width: u32,
-    pub height: u32,
+pub mod texture;
+pub mod movement;
+
+#[derive(Copy, Clone)]
+pub struct Point {
+    pub x: i32,
+    pub y: i32,
 }
 
-pub struct Location {
-    pub x: u32,
-    pub y: u32,
+impl Add for Point {
+    type Output = Point;
+
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self
+    }
+}
+
+pub struct Hitbox {
+    pub anchor: Point,
+    pub width: u32,
+    pub height: u32,
 }
