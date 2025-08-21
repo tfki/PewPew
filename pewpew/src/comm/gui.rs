@@ -1,10 +1,10 @@
-use crate::comm::message::{GuiToHitReg, HitregToGui, SerialToGui, ToGui};
+use crate::comm::message::{GuiToHitreg, HitregToGui, SerialToGui, ToGui};
 use std::sync::mpsc::{Receiver, RecvError, SendError, Sender, TryRecvError};
 use std::time::Duration;
 
 pub struct GuiComm {
     serial_to_gui_rx: Receiver<SerialToGui>,
-    gui_to_hitreg_tx: Sender<GuiToHitReg>,
+    gui_to_hitreg_tx: Sender<GuiToHitreg>,
     hitreg_to_gui_rx: Receiver<HitregToGui>,
 
     // there is a recv method that uses try_recv on serial_to_hitreg and gui_to_hitreg
@@ -16,7 +16,7 @@ pub struct GuiComm {
 impl GuiComm {
     pub fn new(
         serial_to_gui_rx: Receiver<SerialToGui>,
-        gui_to_hitreg_tx: Sender<GuiToHitReg>,
+        gui_to_hitreg_tx: Sender<GuiToHitreg>,
         hitreg_to_gui_rx: Receiver<HitregToGui>,
     ) -> Self {
         Self {
@@ -27,7 +27,7 @@ impl GuiComm {
         }
     }
 
-    pub fn send(&self, message: GuiToHitReg) -> Result<(), SendError<GuiToHitReg>> {
+    pub fn send(&self, message: GuiToHitreg) -> Result<(), SendError<GuiToHitreg>> {
         self.gui_to_hitreg_tx.send(message)
     }
 
