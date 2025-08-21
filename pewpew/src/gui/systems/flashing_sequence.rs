@@ -6,6 +6,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use std::thread;
 use std::time::{Duration, SystemTime};
+use log::debug;
 
 fn usize_to_vec_bool(value: usize, max_idx: u32) -> Vec<bool> {
     let mut result = Vec::new();
@@ -19,6 +20,8 @@ fn usize_to_vec_bool(value: usize, max_idx: u32) -> Vec<bool> {
 }
 
 pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool) {
+    debug!(target: "Gui Thread", "starting flashing sequence");
+
     let time_per_frame = Duration::from_millis(200);
     let all_hitboxes = world.query_mut::<&Hitbox>().into_iter().collect::<Vec<_>>();
 

@@ -8,6 +8,8 @@ pub struct Texture {
     pub current_keyframe: u32,
     pub repeat: bool,
     pub scale: f32,
+    pub flip_horizontally: bool,
+    pub flip_vertically: bool,
     pub rotation_deg: f64,
     pub keyframe_duration: Duration,
     pub last_keyframe_change_time: Option<SystemTime>,
@@ -20,6 +22,8 @@ pub struct Builder {
     current_frame: u32,
     looping: bool,
     scale: f32,
+    flip_horizontally: bool,
+    flip_vertically: bool,
     rotation_deg: f64,
     frame_advance_interval: Option<Duration>,
 }
@@ -32,6 +36,8 @@ impl Builder {
             num_frames: 1,
             current_frame: 0,
             looping: false,
+            flip_vertically: false,
+            flip_horizontally: false,
             scale: 1.0,
             rotation_deg: 0.0,
             frame_advance_interval: None,
@@ -58,6 +64,16 @@ impl Builder {
         self
     }
 
+    pub fn with_horizontal_flip(mut self) -> Self {
+        self.flip_horizontally = true;
+        self
+    }
+
+    pub fn with_vertical_flip(mut self) -> Self {
+        self.flip_vertically = true;
+        self
+    }
+
     pub fn with_frame_advance_interval(mut self, frame_advance_interval: Duration) -> Self {
         self.frame_advance_interval = Some(frame_advance_interval);
         self
@@ -71,6 +87,8 @@ impl Builder {
             current_keyframe: self.current_frame,
             repeat: self.looping,
             scale: self.scale,
+            flip_horizontally: self.flip_vertically,
+            flip_vertically: self.flip_horizontally,
             rotation_deg: self.rotation_deg,
             keyframe_duration: self.frame_advance_interval.unwrap_or(Duration::from_secs(u64::MAX)),
             last_keyframe_change_time: None,
