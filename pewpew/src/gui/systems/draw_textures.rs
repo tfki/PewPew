@@ -21,9 +21,7 @@ pub fn run(canvas: &mut WindowCanvas, world: &mut World, resources: &mut Resourc
             tile_size.1,
         );
 
-        let dest_rect = Rect::new(
-            texture.anchor.x,
-            texture.anchor.y,
+        let dest_rect = texture.position.align_rect(
             (tile_size.0 as f32 * texture.scale) as u32,
             (tile_size.1 as f32 * texture.scale) as u32,
         );

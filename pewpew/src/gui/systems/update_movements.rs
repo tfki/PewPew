@@ -1,6 +1,6 @@
 use crate::gui::components::movement::Movement;
 use crate::gui::components::texture::Texture;
-use crate::gui::components::Hitbox;
+use crate::gui::components::{Hitbox, Text};
 use hecs::World;
 use std::time::SystemTime;
 
@@ -8,8 +8,8 @@ pub fn run(world: &mut World) {
     let now = SystemTime::now();
 
     // move all hitboxes
-    for (_id, (movement, hitbox_opt, texture_opt)) in
-        world.query_mut::<(&mut Movement, Option<&mut Hitbox>, Option<&mut Texture>)>()
+    for (_id, (movement, hitbox_opt, texture_opt, text_opt)) in
+        world.query_mut::<(&mut Movement, Option<&mut Hitbox>, Option<&mut Texture>, Option<&mut Text>)>()
     {
         if movement.last_movement_time.is_none()
             || (movement.last_movement_time.is_some()
@@ -19,10 +19,13 @@ pub fn run(world: &mut World) {
                     >= movement.every)
         {
             if let Some(hitbox) = hitbox_opt {
-                hitbox.anchor = hitbox.anchor + movement.by;
+                hitbox.position.point = hitbox.position.point + movement.by;
             }
             if let Some(texture) = texture_opt {
-                texture.anchor = texture.anchor + movement.by;
+                texture.position.point = texture.position.point + movement.by;
+            }
+            if let Some(text) = text_opt {
+                text.position.point = text.position.point + movement.by;
             }
 
             movement.last_movement_time = Some(now);

@@ -2,11 +2,10 @@ use crate::comm::message::{GuiToHitreg, HitregToGui};
 use crate::gui::components::Hitbox;
 use crate::gui::gui_context::GuiContext;
 use hecs::World;
+use log::debug;
 use sdl2::pixels::Color;
-use sdl2::rect::Rect;
 use std::thread;
 use std::time::{Duration, SystemTime};
-use log::debug;
 
 fn usize_to_vec_bool(value: usize, max_idx: u32) -> Vec<bool> {
     let mut result = Vec::new();
@@ -60,24 +59,14 @@ pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool) {
                 gui_context.canvas().set_draw_color(Color::WHITE);
                 gui_context
                     .canvas()
-                    .fill_rect(Rect::new(
-                        hitbox.anchor.x,
-                        hitbox.anchor.y,
-                        hitbox.width,
-                        hitbox.height,
-                    ))
+                    .fill_rect(hitbox.position.align_rect(hitbox.width, hitbox.height))
                     .unwrap();
             }
             if show_frames {
                 gui_context.canvas().set_draw_color(Color::CYAN);
                 gui_context
                     .canvas()
-                    .draw_rect(Rect::new(
-                        hitbox.anchor.x,
-                        hitbox.anchor.y,
-                        hitbox.width,
-                        hitbox.height,
-                    ))
+                    .draw_rect(hitbox.position.align_rect(hitbox.width, hitbox.height))
                     .unwrap();
             }
         }
@@ -106,12 +95,7 @@ pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool) {
         gui_context.canvas().set_draw_color(Color::RED);
         gui_context
             .canvas()
-            .fill_rect(Rect::new(
-                hitbox.anchor.x,
-                hitbox.anchor.y,
-                hitbox.width,
-                hitbox.height,
-            ))
+            .fill_rect(hitbox.position.align_rect(hitbox.width, hitbox.height))
             .unwrap();
         gui_context.canvas().present();
         thread::sleep(Duration::from_secs(1));
