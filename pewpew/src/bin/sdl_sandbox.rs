@@ -39,7 +39,7 @@ pub fn main() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     // let texture_creator = canvas.texture_creator(); // TODO implement bee idiot
-    // let bee_idiot_spritesheet = texture_creator.load_texture(Path::new("ressources/Moorhuhn_X_Huhn_at_Beehive.png"))?; // TODO implement bee idiot
+    // let bee_idiot_spritesheet = texture_creator.load_texture(Path::new("res/beehive_dumbass.png"))?; // TODO implement bee idiot
 
     canvas.set_draw_color(Color::BLACK);
     canvas.clear();
@@ -137,7 +137,7 @@ pub fn display_intro(canvas: &mut sdl2::render::WindowCanvas) {
 
     let texture_creator = canvas.texture_creator();
     let huhn_in_hole_spritesheet = texture_creator
-        .load_texture(Path::new("ressources/Huhn_in_Hole.png"))
+        .load_texture(Path::new("../../res/intro_huhn_in_hole.png"))
         .unwrap(); // https://onlinetools.com/image/remove-specific-color-from-image
 
     let sprite_tile_size = (76, HIH_HEIGHT_ANIM);
@@ -213,7 +213,7 @@ pub fn display_flying_huhns(canvas: &mut sdl2::render::WindowCanvas) {
 
     let texture_creator = canvas.texture_creator();
     let huhns_fyling_dying_spritesheet = texture_creator
-        .load_texture(Path::new("ressources/Huhns_flying_dying.png"))
+        .load_texture(Path::new("../../res/flying_huhn.png"))
         .unwrap(); // https://onlinetools.com/image/remove-specific-color-from-image
 
     let sprite_tile_size_close = (CLOSE_WIDTH_SPRITE, CLOSE_HEIGHT_SPRITE);

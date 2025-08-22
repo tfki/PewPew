@@ -30,13 +30,13 @@ pub fn run(canvas: &mut WindowCanvas, world: &mut World, resources: &mut Resourc
 
         canvas
             .copy_ex(
-                &resources.images[texture.image_id],
+                sprite,
                 Some(source_rect),
                 Some(dest_rect),
                 texture.rotation_deg,
                 None,
-                false,
-                false,
+                texture.flip_horizontally,
+                texture.flip_vertically,
             )
             .unwrap();
     }

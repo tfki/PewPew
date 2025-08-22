@@ -29,7 +29,19 @@ fn display_intro(gui_context: &mut GuiContext) {
 
         resources.images.push(
             texture_creator
-                .load_texture(Path::new("ressources/Huhn_in_Hole.png"))
+                .load_texture(Path::new("./res/intro_huhn_in_hole.png"))
+                .unwrap(),
+        ); // https://onlinetools.com/image/remove-specific-color-from-image
+
+        resources.images.push(
+            texture_creator
+                .load_texture(Path::new("./res/flying_huhn.png"))
+                .unwrap(),
+        ); // https://onlinetools.com/image/remove-specific-color-from-image
+
+        resources.images.push(
+            texture_creator
+                .load_texture(Path::new("./res/flying_huhn_dying.png"))
                 .unwrap(),
         ); // https://onlinetools.com/image/remove-specific-color-from-image
 
@@ -41,15 +53,16 @@ fn display_intro(gui_context: &mut GuiContext) {
                     x: x * 200,
                     y: y * 200,
                 };
-                let texture = texture::Builder::new(0, anchor)
-                    .with_num_frames(14)
+                let texture = texture::Builder::new(1, anchor)
+                    .with_num_frames(13)
+                    .with_vertical_flip()
                     .looping()
-                    .with_frame_advance_interval(Duration::from_millis((50 * (1 + x + y)) as u64))
+                    .with_frame_advance_interval(Duration::from_millis((10 * (10 - (x + y))) as u64))
                     .build();
 
                 let movement = movement::Builder::new(
                     By {
-                        x: (x + y) / 2,
+                        x: x + y,
                         y: 0,
                     },
                     Duration::from_millis(33),
