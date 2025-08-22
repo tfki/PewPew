@@ -4,7 +4,6 @@ use crate::gui::gui_context::GuiContext;
 use hecs::World;
 use log::debug;
 use sdl2::pixels::Color;
-use sdl2::rect::Rect;
 use std::thread;
 use std::time::{Duration, SystemTime};
 

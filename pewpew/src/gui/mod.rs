@@ -29,7 +29,7 @@ fn display_intro(gui_context: &mut GuiContext) {
     {
         let default_font = ttf_context
             .load_font(
-                "res/fonts/Walter_Turncoat/WalterTurncoat-Regular.ttf".to_string(),
+                "res/fonts/Walter_Turncoat/WalterTurncoat-Regular.ttf",
                 128,
             )
             .unwrap();
