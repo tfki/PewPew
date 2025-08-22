@@ -30,7 +30,7 @@ pub fn run(canvas: &mut WindowCanvas, world: &mut World, resources: &mut Resourc
 
         canvas
             .copy_ex(
-                &sprite,
+                sprite,
                 Some(source_rect),
                 Some(dest_rect),
                 texture.rotation_deg,
