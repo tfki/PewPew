@@ -1,8 +1,8 @@
+use crate::gui::components::PointWithAlignment;
 use std::time::{Duration, SystemTime};
-use crate::gui::components::Point;
 
 pub struct Texture {
-    pub anchor: Point,
+    pub position: PointWithAlignment,
     pub image_id: usize,
     pub num_frames: u32,
     pub current_keyframe: u32,
@@ -16,7 +16,7 @@ pub struct Texture {
 }
 
 pub struct Builder {
-    anchor: Point,
+    position: PointWithAlignment,
     image_id: usize,
     num_frames: u32,
     current_frame: u32,
@@ -29,9 +29,9 @@ pub struct Builder {
 }
 
 impl Builder {
-    pub fn new(image_id: usize, anchor: Point) -> Self {
+    pub fn new(image_id: usize, position: PointWithAlignment) -> Self {
         Builder {
-            anchor,
+            position,
             image_id,
             num_frames: 1,
             current_frame: 0,
@@ -81,7 +81,7 @@ impl Builder {
 
     pub fn build(self) -> Texture {
         Texture {
-            anchor: self.anchor,
+            position: self.position,
             image_id: self.image_id,
             num_frames: self.num_frames,
             current_keyframe: self.current_frame,
@@ -90,7 +90,9 @@ impl Builder {
             flip_horizontally: self.flip_vertically,
             flip_vertically: self.flip_horizontally,
             rotation_deg: self.rotation_deg,
-            keyframe_duration: self.frame_advance_interval.unwrap_or(Duration::from_secs(u64::MAX)),
+            keyframe_duration: self
+                .frame_advance_interval
+                .unwrap_or(Duration::from_secs(u64::MAX)),
             last_keyframe_change_time: None,
         }
     }

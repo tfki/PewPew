@@ -3,10 +3,11 @@ mod gui_context;
 pub mod resources;
 pub mod systems;
 
-use crate::common::cancel_token::CancelToken;
 use crate::comm::GuiComm;
+use crate::common::cancel_token::CancelToken;
 use crate::gui::components::movement::By;
-use crate::gui::components::{movement, texture, Hitbox, Point};
+use crate::gui::components::point_with_alignment::PointWithAlignment;
+use crate::gui::components::{movement, texture, Hitbox, Point, Text};
 use crate::gui::gui_context::GuiContext;
 use crate::gui::resources::Resources;
 use hecs::World;
@@ -24,8 +25,15 @@ pub fn run(comm: GuiComm, cancel_token: CancelToken) {
 
 fn display_intro(gui_context: &mut GuiContext) {
     let texture_creator = gui_context.canvas().texture_creator();
+    let ttf_context = sdl2::ttf::init().unwrap();
     {
-        let mut resources = Resources::default();
+        let default_font = ttf_context
+            .load_font(
+                "res/fonts/Walter_Turncoat/WalterTurncoat-Regular.ttf".to_string(),
+                128,
+            )
+            .unwrap();
+        let mut resources = Resources::new(default_font);
 
         resources.images.push(
             texture_creator
@@ -47,32 +55,41 @@ fn display_intro(gui_context: &mut GuiContext) {
 
         let mut world = World::new();
 
+        for i in 1..10 {
+            world.spawn((
+                Text {
+                    text: "Text works hehe".to_string(),
+                    position: PointWithAlignment::new_center(Point { x: 0, y: 100 * i }),
+                    scale: i as f32 * 1.0 / 10.0,
+                    color: Color::RGB(255, 0, (i * 25) as u8),
+                },
+                movement::Builder::new(By { x: i, y: 0 }, Duration::from_millis(33)).build(),
+            ));
+        }
+
         for x in 0..5 {
             for y in 0..5 {
-                let anchor = Point {
+                let position = PointWithAlignment::new_top_left(Point {
                     x: x * 200,
                     y: y * 200,
-                };
-                let texture = texture::Builder::new(1, anchor)
+                });
+                let texture = texture::Builder::new(1, position)
                     .with_num_frames(13)
                     .with_vertical_flip()
                     .looping()
-                    .with_frame_advance_interval(Duration::from_millis((10 * (10 - (x + y))) as u64))
+                    .with_frame_advance_interval(Duration::from_millis(
+                        (10 * (10 - (x + y))) as u64,
+                    ))
                     .build();
 
-                let movement = movement::Builder::new(
-                    By {
-                        x: x + y,
-                        y: 0,
-                    },
-                    Duration::from_millis(33),
-                )
-                .build();
+                let movement =
+                    movement::Builder::new(By { x: x + y, y: 0 }, Duration::from_millis(33))
+                        .build();
 
                 world.spawn((
                     texture,
                     Hitbox {
-                        anchor,
+                        position,
                         width: 200,
                         height: 200,
                     },
@@ -100,6 +117,12 @@ fn display_intro(gui_context: &mut GuiContext) {
                     systems::update_movements::run(&mut world);
                     systems::update_animated_textures::run(&mut world);
                     systems::draw_textures::run(gui_context.canvas(), &mut world, &mut resources);
+                    systems::draw_texts::run(
+                        gui_context.canvas(),
+                        &mut world,
+                        &mut resources,
+                        &texture_creator,
+                    );
                 }
 
                 gui_context.canvas().present();

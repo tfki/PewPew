@@ -1,7 +1,9 @@
 use std::ops::Add;
+use crate::gui::components::point_with_alignment::PointWithAlignment;
 
-pub mod texture;
 pub mod movement;
+pub mod texture;
+pub mod point_with_alignment;
 
 #[derive(Copy, Clone)]
 pub struct Point {
@@ -20,7 +22,14 @@ impl Add for Point {
 }
 
 pub struct Hitbox {
-    pub anchor: Point,
+    pub position: PointWithAlignment,
     pub width: u32,
     pub height: u32,
+}
+
+pub struct Text {
+    pub text: String,
+    pub position: PointWithAlignment,
+    pub scale: f32,
+    pub color: sdl2::pixels::Color,
 }
