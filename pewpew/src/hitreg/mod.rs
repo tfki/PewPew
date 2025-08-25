@@ -3,6 +3,7 @@ use crate::comm::message::{GuiToHitreg, HitregToGui};
 use crate::comm::message::ToHitreg;
 use crate::common::cancel_token::CancelToken;
 use log::{debug, error, info};
+use std::collections::VecDeque;
 
 #[derive(Debug)]
 enum State {
@@ -10,13 +11,28 @@ enum State {
     WaitingForFrames(u32),
 }
 
+#[derive(Debug, PartialEq)]
+struct Color {
+    pub black: u16,
+    pub white: u16,
+}
+
 pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
     move || {
         // i suggest implementing the hitreg with some kind of state machine
 
         let mut state = State::Idle;
-
         let mut chicken_data = Vec::new();
+        let mut gui_sequences: Vec<bool> = Vec::new();
+        let mut brightness_buffer: VecDeque<u16> = VecDeque::with_capacity(16);
+        fn store_brighness_in_buffer(brightness_buffer: &mut VecDeque<u16>, val:u16) {
+            if brightness_buffer.len() == brightness_buffer.capacity() {
+            brightness_buffer.pop_back();
+            } else {
+                brightness_buffer.push_front(val);
+            }
+        }
+
         loop {
             if cancel_token.was_canceled() {
                 info!(target: "Hitreg Thread", "exiting because of cancel token");
@@ -34,9 +50,9 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                         state = State::WaitingForFrames(num_frames);
                         debug!(target: "Hitreg Thread", "changing state to {state:?}");
                     }
-                    ToHitreg::FromSerial(_) => {
-                        // store value in the brightness buffer
-                        // and delete brightness values in the buffer that are older than x seconds
+                    ToHitreg::FromSerial(serial_to_hit_reg) => {
+                        store_brighness_in_buffer(&mut brightness_buffer, serial_to_hit_reg.value_raw);
+
                     }
                     x => {
                         error!(target: "Hitreg Thread", "hitreg received unexpected message in state {state:?}, exiting: {x:?}");
@@ -58,14 +74,18 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                     match comm.recv().unwrap() {
                         ToHitreg::FromGui(GuiToHitreg::Frame(_time)) => {
                             // look at the values in the brightness buffer here
-                            // to determine if sensortag is seeing black or white?
-
+                            // to determine if sensortag is seeing black or white
+                            // white => true; black => false
+                            // TODO set default to black which is prob not 0
+                            if false {// brightness_buffer.front().unwrap_or(&0).hasColor(Color {black: 1000}) {
+                                // TODO save in gui_sequences && implement hasColor on VecDequeue?
+                            }
+                            gui_sequences.push(false);
                             state = State::WaitingForFrames(num_frames_to_go - 1);
                             debug!(target: "Hitreg Thread", "changing state to {state:?}");
                         }
-                        ToHitreg::FromSerial(_) => {
-                            // store value in the brightness buffer
-                            // and delete brightness values in the buffer that are older than x seconds
+                        ToHitreg::FromSerial(serial_to_hit_reg) => {
+                            store_brighness_in_buffer(&mut brightness_buffer, serial_to_hit_reg.value_raw);
                         }
                         x => {
                             error!(target: "Hitreg Thread", "hitreg received unexpected message in state {state:?}, exiting: {x:?}");
