@@ -1,6 +1,6 @@
-use crate::gui::components::point_with_alignment::PointWithAlignment;
 use hecs::{Entity, World};
 use std::ops::Add;
+use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
 
 pub mod hitbox;
 pub mod movement;

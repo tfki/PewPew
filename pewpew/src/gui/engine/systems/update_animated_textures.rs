@@ -1,6 +1,6 @@
-use crate::gui::components::texture::Texture;
-use crate::gui::stopwatch::Stopwatch;
 use hecs::World;
+use crate::gui::engine::components::texture::Texture;
+use crate::gui::engine::stopwatch::Stopwatch;
 
 pub fn run(world: &mut World, game_time: &mut Stopwatch) {
     let game_elapsed = game_time.elapsed_ms();

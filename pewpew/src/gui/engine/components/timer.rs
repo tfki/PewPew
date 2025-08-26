@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use hecs::{Entity, World};
 use std::time::Duration;
-use crate::gui::components::Action;
+use crate::gui::engine::components::Action;
 
 pub struct Timer {
     pub duration: Duration,

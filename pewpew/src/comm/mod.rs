@@ -1,4 +1,4 @@
-pub(crate) use crate::comm::gui::GuiComm;
+use crate::comm::gui::GuiComm;
 use crate::comm::hitreg::HitregComm;
 use crate::comm::message::{GuiToHitreg, HitregToGui, SerialToGui, SerialToHitReg};
 use crate::comm::serial::SerialComm;

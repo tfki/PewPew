@@ -1,5 +1,5 @@
-use crate::gui::components::PointWithAlignment;
 use std::time::Duration;
+use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
 
 pub struct Texture {
     pub position: PointWithAlignment,

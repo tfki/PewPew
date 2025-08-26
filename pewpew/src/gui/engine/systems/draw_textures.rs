@@ -1,8 +1,8 @@
-use crate::gui::components::texture::Texture;
-use crate::gui::resources::Resources;
 use hecs::{Entity, World};
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
+use crate::gui::engine::components::texture::Texture;
+use crate::gui::engine::resources::Resources;
 
 pub fn run(canvas: &mut WindowCanvas, world: &mut World, resources: &mut Resources) {
     let mut textures: Vec<(Entity, &mut Texture)> =

@@ -5,8 +5,8 @@ use log::debug;
 use sdl2::pixels::Color;
 use std::thread;
 use std::time::{Duration, SystemTime};
-use crate::gui::components::hitbox::Hitbox;
-use crate::gui::stopwatch::Stopwatch;
+use crate::gui::engine::components::hitbox::Hitbox;
+use crate::gui::engine::stopwatch::Stopwatch;
 
 fn usize_to_vec_bool(value: usize, max_idx: u32) -> Vec<bool> {
     let mut result = Vec::new();

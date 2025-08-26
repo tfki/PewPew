@@ -1,5 +1,5 @@
-use crate::gui::components::Point;
 use std::time::Duration;
+use crate::gui::engine::components::Point;
 
 pub type By = Point;
 pub struct Movement {

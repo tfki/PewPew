@@ -2,7 +2,7 @@ use sdl2::image::InitFlag;
 use sdl2::render::WindowCanvas;
 use sdl2::Sdl;
 use crate::common::cancel_token::CancelToken;
-use crate::comm::GuiComm;
+use crate::comm::gui::GuiComm;
 
 pub struct Settings {
     width: Option<i32>,

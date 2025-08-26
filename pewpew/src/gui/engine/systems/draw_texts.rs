@@ -1,7 +1,7 @@
-use crate::gui::resources::Resources;
 use hecs::World;
 use sdl2::render::{TextureCreator, TextureQuery, WindowCanvas};
-use crate::gui::components::Text;
+use crate::gui::engine::components::Text;
+use crate::gui::engine::resources::Resources;
 
 pub fn run(canvas: &mut WindowCanvas, world: &mut World, resources: &mut Resources, texture_creator: &TextureCreator<sdl2::video::WindowContext>) {
     // draw normal textures

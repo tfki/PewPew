@@ -1,5 +1,5 @@
-use crate::gui::components::Point;
 use sdl2::rect::Rect;
+use crate::gui::engine::components::Point;
 
 #[derive(Copy, Clone)]
 pub enum VAlign {

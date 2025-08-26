@@ -1,4 +1,4 @@
-use crate::gui::components::point_with_alignment::PointWithAlignment;
+use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
 
 pub struct Hitbox {
     pub position: PointWithAlignment,
