@@ -1,30 +1,28 @@
-use std::sync::Arc;
-use hecs::{Entity, World};
 use std::time::Duration;
-use crate::gui::engine::components::Action;
+use crate::gui::engine::event::Event;
 
 pub struct Timer {
     pub duration: Duration,
     pub looping: bool,
-    pub action: Arc<Action>,
+    pub event: Event,
     pub next_activation_at_elapsed_game_time: Option<u128>,
 }
 
 pub struct Builder {
     pub duration: Duration,
     pub looping: bool,
-    pub action: Arc<Action>,
+    pub event: Event,
 }
 
 impl Builder {
-    pub fn new<A: Fn(Entity, &mut World) + Send + Sync + 'static>(
+    pub fn new(
         duration: Duration,
-        action: A,
+        event: Event,
     ) -> Self {
         Builder {
             duration,
             looping: false,
-            action: Arc::new(action),
+            event,
         }
     }
 
@@ -37,7 +35,7 @@ impl Builder {
         Timer {
             duration: self.duration,
             looping: self.looping,
-            action: self.action,
+            event: self.event,
             next_activation_at_elapsed_game_time: None,
         }
     }

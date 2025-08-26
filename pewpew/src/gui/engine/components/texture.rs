@@ -1,5 +1,6 @@
 use std::time::Duration;
 use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
+use crate::gui::engine::event::Event;
 
 pub struct Texture {
     pub position: PointWithAlignment,
@@ -14,6 +15,9 @@ pub struct Texture {
     pub rotation_deg: f64,
     pub keyframe_duration: Duration,
     pub next_keyframe_switch_at_elapsed_game_time: Option<u128>,
+
+    /// triggered every time, animated texture reaches its end
+    pub animation_end_event: Option<Event>,
 }
 
 pub struct Builder {
@@ -28,6 +32,7 @@ pub struct Builder {
     flip_vertically: bool,
     rotation_deg: f64,
     frame_advance_interval: Option<Duration>,
+    animation_end_event: Option<Event>,
 }
 
 impl Builder {
@@ -44,7 +49,13 @@ impl Builder {
             scale: 1.0,
             rotation_deg: 0.0,
             frame_advance_interval: None,
+            animation_end_event: None,
         }
+    }
+
+    pub fn on_animation_end(mut self, event: Event) -> Self {
+        self.animation_end_event = Some(event);
+        self
     }
 
     pub fn with_num_frames(mut self, num_frames: u32) -> Self {
@@ -103,6 +114,7 @@ impl Builder {
                 .frame_advance_interval
                 .unwrap_or(Duration::from_secs(u64::MAX)),
             next_keyframe_switch_at_elapsed_game_time: None,
+            animation_end_event: self.animation_end_event,
         }
     }
 }

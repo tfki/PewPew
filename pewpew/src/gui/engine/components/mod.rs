@@ -1,4 +1,3 @@
-use hecs::{Entity, World};
 use std::ops::Add;
 use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
 
@@ -7,8 +6,6 @@ pub mod movement;
 pub mod point_with_alignment;
 pub mod texture;
 pub mod timer;
-
-pub type Action = dyn Fn(Entity, &mut World) + Send + Sync;
 
 #[derive(Copy, Clone)]
 pub struct Point {

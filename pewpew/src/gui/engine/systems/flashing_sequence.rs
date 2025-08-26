@@ -33,7 +33,6 @@ pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool, g
     };
 
 
-
     // ilog2 rounds down, but we need to round up, thus +1
     // and, pattern 0..0 is forbidden, thus another +1 = +2
     let num_frames = (all_hitboxes.len() + 2).ilog2();
@@ -98,7 +97,11 @@ pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool, g
 
     // wait for answer from hitreg
     if let HitregToGui::Result(Some(victim)) = gui_context.comm().recv_from_hitreg().unwrap() {
-        let hitbox = world.query_one_mut::<&Hitbox>(victim).unwrap();
+        let hitbox = world.query_one_mut::<&mut Hitbox>(victim).unwrap();
+
+        if let Some(event) = &mut hitbox.hit_event {
+            event.trigger();
+        }
 
         gui_context.canvas().set_draw_color(Color::BLACK);
         gui_context.canvas().clear();
