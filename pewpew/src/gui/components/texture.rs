@@ -1,8 +1,9 @@
 use crate::gui::components::PointWithAlignment;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 pub struct Texture {
     pub position: PointWithAlignment,
+    pub z_index: i32,
     pub image_id: usize,
     pub num_frames: u32,
     pub current_keyframe: u32,
@@ -12,11 +13,12 @@ pub struct Texture {
     pub flip_vertically: bool,
     pub rotation_deg: f64,
     pub keyframe_duration: Duration,
-    pub last_keyframe_change_time: Option<SystemTime>,
+    pub next_keyframe_switch_at_elapsed_game_time: Option<u128>,
 }
 
 pub struct Builder {
     position: PointWithAlignment,
+    z_index: i32,
     image_id: usize,
     num_frames: u32,
     current_frame: u32,
@@ -33,6 +35,7 @@ impl Builder {
         Builder {
             position,
             image_id,
+            z_index: 0,
             num_frames: 1,
             current_frame: 0,
             looping: false,
@@ -46,6 +49,11 @@ impl Builder {
 
     pub fn with_num_frames(mut self, num_frames: u32) -> Self {
         self.num_frames = num_frames;
+        self
+    }
+
+    pub fn with_z_index(mut self, z_index: i32) -> Self {
+        self.z_index = z_index;
         self
     }
 
@@ -83,6 +91,7 @@ impl Builder {
         Texture {
             position: self.position,
             image_id: self.image_id,
+            z_index: self.z_index,
             num_frames: self.num_frames,
             current_keyframe: self.current_frame,
             repeat: self.looping,
@@ -93,7 +102,7 @@ impl Builder {
             keyframe_duration: self
                 .frame_advance_interval
                 .unwrap_or(Duration::from_secs(u64::MAX)),
-            last_keyframe_change_time: None,
+            next_keyframe_switch_at_elapsed_game_time: None,
         }
     }
 }

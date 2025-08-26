@@ -1,11 +1,11 @@
 use crate::gui::components::Point;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 pub type By = Point;
 pub struct Movement {
     pub by: By,
     pub every: Duration,
-    pub last_movement_time: Option<SystemTime>,
+    pub next_movement_at_elapsed_game_time: Option<u128>,
 }
 
 pub struct Builder {
@@ -22,7 +22,7 @@ impl Builder {
         Movement {
             by: self.by,
             every: self.every,
-            last_movement_time: None,
+            next_movement_at_elapsed_game_time: None,
         }
     }
 }

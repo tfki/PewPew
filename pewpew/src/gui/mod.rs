@@ -1,16 +1,20 @@
 pub mod components;
 mod gui_context;
 pub mod resources;
+pub mod stopwatch;
 pub mod systems;
 
 use crate::comm::GuiComm;
 use crate::common::cancel_token::CancelToken;
+use crate::gui::components::hitbox::Hitbox;
 use crate::gui::components::movement::By;
 use crate::gui::components::point_with_alignment::PointWithAlignment;
-use crate::gui::components::{movement, texture, Hitbox, Point, Text};
+use crate::gui::components::{movement, texture, timer, Point, Text};
 use crate::gui::gui_context::GuiContext;
 use crate::gui::resources::Resources;
-use hecs::World;
+use crate::gui::stopwatch::Stopwatch;
+use hecs::{Entity, World};
+use log::debug;
 use sdl2::image::LoadTexture;
 use sdl2::pixels::Color;
 use std::path::Path;
@@ -28,10 +32,7 @@ fn display_intro(gui_context: &mut GuiContext) {
     let ttf_context = sdl2::ttf::init().unwrap();
     {
         let default_font = ttf_context
-            .load_font(
-                "res/fonts/Walter_Turncoat/WalterTurncoat-Regular.ttf",
-                128,
-            )
+            .load_font("res/fonts/Walter_Turncoat/WalterTurncoat-Regular.ttf", 128)
             .unwrap();
         let mut resources = Resources::new(default_font);
 
@@ -54,6 +55,20 @@ fn display_intro(gui_context: &mut GuiContext) {
         ); // https://onlinetools.com/image/remove-specific-color-from-image
 
         let mut world = World::new();
+        let mut game_time = Stopwatch::new_paused();
+
+        let printer = |_: Entity, _: &mut World| {
+            debug!(
+                "hello from timer hehe {}",
+                SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis()
+            );
+        };
+        world.spawn((timer::Builder::new(Duration::from_secs(3), printer)
+            .looping()
+            .build(),));
 
         for i in 1..10 {
             world.spawn((
@@ -92,11 +107,14 @@ fn display_intro(gui_context: &mut GuiContext) {
                         position,
                         width: 200,
                         height: 200,
+                        z_index: 0,
                     },
                     movement,
                 ));
             }
         }
+
+        game_time.resume();
 
         gui_context.canvas().set_draw_color(Color::BLACK);
         gui_context.canvas().clear();
@@ -112,10 +130,11 @@ fn display_intro(gui_context: &mut GuiContext) {
                 if frame % 100 == 0 {
                     // then, show flashing sequence
                     // this takes how many ever frames it needs O(ceil(log2(|hitboxes|)))
-                    systems::flashing_sequence::run(gui_context, &mut world, true);
+                    systems::flashing_sequence::run(gui_context, &mut world, true, &mut game_time);
                 } else {
-                    systems::update_movements::run(&mut world);
-                    systems::update_animated_textures::run(&mut world);
+                    systems::work_timers::run(&mut world, &mut game_time);
+                    systems::update_movements::run(&mut world, &mut game_time);
+                    systems::update_animated_textures::run(&mut world, &mut game_time);
                     systems::draw_textures::run(gui_context.canvas(), &mut world, &mut resources);
                     systems::draw_texts::run(
                         gui_context.canvas(),

@@ -1,9 +1,14 @@
-use std::ops::Add;
 use crate::gui::components::point_with_alignment::PointWithAlignment;
+use hecs::{Entity, World};
+use std::ops::Add;
 
+pub mod hitbox;
 pub mod movement;
-pub mod texture;
 pub mod point_with_alignment;
+pub mod texture;
+pub mod timer;
+
+pub type Action = dyn Fn(Entity, &mut World) + Send + Sync;
 
 #[derive(Copy, Clone)]
 pub struct Point {
@@ -19,12 +24,6 @@ impl Add for Point {
         self.y += rhs.y;
         self
     }
-}
-
-pub struct Hitbox {
-    pub position: PointWithAlignment,
-    pub width: u32,
-    pub height: u32,
 }
 
 pub struct Text {

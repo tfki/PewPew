@@ -3,3 +3,4 @@ pub mod flashing_sequence;
 pub mod update_animated_textures;
 pub mod update_movements;
 pub(crate) mod draw_texts;
+pub mod work_timers;

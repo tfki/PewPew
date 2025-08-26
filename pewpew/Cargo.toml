@@ -4,8 +4,16 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-log = "0.4.27"
-env_logger = "0.11.8"
-hecs = "0.10.5"
 serialport = "4.7.2"
+
+# basic logging interface in rust
+log = "0.4.27"
+
+# logger that implements log interface and is configured through env vars
+env_logger = "0.11.8"
+
+# some entity-component-system library
+hecs = "0.10.5"
+
+# all things graphics
 sdl2 = { version = "0.38.0", features = ["image", "ttf"] }

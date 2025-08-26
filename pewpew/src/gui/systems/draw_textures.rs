@@ -1,12 +1,18 @@
 use crate::gui::components::texture::Texture;
 use crate::gui::resources::Resources;
-use hecs::World;
+use hecs::{Entity, World};
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
 
 pub fn run(canvas: &mut WindowCanvas, world: &mut World, resources: &mut Resources) {
+    let mut textures: Vec<(Entity, &mut Texture)> =
+        world.query_mut::<&mut Texture>().into_iter().collect();
+
+    // textures with lower z_index must be drawn first
+    textures.sort_by(|(_, texture1), (_, texture2)| texture1.z_index.cmp(&texture2.z_index));
+
     // draw normal textures
-    for (_id, texture) in world.query_mut::<&mut Texture>() {
+    for (_id, texture) in textures {
         let sprite = &resources.images[texture.image_id];
         let tile_size = (
             sprite.query().width,
