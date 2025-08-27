@@ -111,7 +111,7 @@ pub fn run(gui_context: &mut GuiContext) {
                 for (entity, event) in &mut chickens_with_events {
                     if event.consume() {
                         let death_texture = {
-                            let texture = world.get::<(&Texture)>(*entity).unwrap();
+                            let texture = world.get::<&Texture>(*entity).unwrap();
 
                             texture::Builder::new(2, texture.position)
                                 .with_num_frames(8)
