@@ -1,11 +1,12 @@
 use crate::comm::message::{GuiToHitreg, HitregToGui};
-use crate::gui::components::Hitbox;
 use crate::gui::gui_context::GuiContext;
 use hecs::World;
 use log::debug;
 use sdl2::pixels::Color;
 use std::thread;
 use std::time::{Duration, SystemTime};
+use crate::gui::engine::components::hitbox::Hitbox;
+use crate::gui::engine::stopwatch::Stopwatch;
 
 fn usize_to_vec_bool(value: usize, max_idx: u32) -> Vec<bool> {
     let mut result = Vec::new();
@@ -18,11 +19,19 @@ fn usize_to_vec_bool(value: usize, max_idx: u32) -> Vec<bool> {
     result
 }
 
-pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool) {
+pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool, game_time: &mut Stopwatch) {
+    game_time.pause();
     debug!(target: "Gui Thread", "starting flashing sequence");
 
     let time_per_frame = Duration::from_millis(200);
-    let all_hitboxes = world.query_mut::<&Hitbox>().into_iter().collect::<Vec<_>>();
+    let all_hitboxes = {
+        // sort hitboxes here in an extra scope
+        // this way, all_hitboxes does not need to be mutable
+        let mut tmp = world.query_mut::<&Hitbox>().into_iter().collect::<Vec<_>>();
+        tmp.sort_by(|(_, hitbox1), (_, hitbox2)| hitbox1.z_index.cmp(&hitbox2.z_index));
+        tmp
+    };
+
 
     // ilog2 rounds down, but we need to round up, thus +1
     // and, pattern 0..0 is forbidden, thus another +1 = +2
@@ -88,7 +97,11 @@ pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool) {
 
     // wait for answer from hitreg
     if let HitregToGui::Result(Some(victim)) = gui_context.comm().recv_from_hitreg().unwrap() {
-        let hitbox = world.query_one_mut::<&Hitbox>(victim).unwrap();
+        let hitbox = world.query_one_mut::<&mut Hitbox>(victim).unwrap();
+
+        if let Some(event) = &mut hitbox.hit_event {
+            event.trigger();
+        }
 
         gui_context.canvas().set_draw_color(Color::BLACK);
         gui_context.canvas().clear();
@@ -100,4 +113,5 @@ pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool) {
         gui_context.canvas().present();
         thread::sleep(Duration::from_secs(1));
     }
+    game_time.resume();
 }

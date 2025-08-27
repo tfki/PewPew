@@ -1,21 +1,21 @@
-use crate::gui::components::Point;
 use sdl2::rect::Rect;
+use crate::gui::engine::components::Point;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
 pub enum VAlign {
     Top,
     Center,
     Bottom,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
 pub enum HAlign {
     Left,
     Center,
     Right,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
 pub struct PointWithAlignment {
     pub point: Point,
     pub v_align: VAlign,

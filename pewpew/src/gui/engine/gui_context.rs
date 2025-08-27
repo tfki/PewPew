@@ -2,7 +2,7 @@ use sdl2::image::InitFlag;
 use sdl2::render::WindowCanvas;
 use sdl2::Sdl;
 use crate::common::cancel_token::CancelToken;
-use crate::comm::GuiComm;
+use crate::comm::gui::GuiComm;
 
 pub struct Settings {
     width: Option<i32>,
@@ -21,12 +21,15 @@ impl Default for Settings {
 }
 
 impl Settings {
+
+    #[allow(unused)]
     pub fn with_dimensions(mut self, width: i32, height: i32) -> Self {
         self.width = Some(width);
         self.height = Some(height);
         self
     }
 
+    #[allow(unused)]
     pub fn windowed(mut self) -> Self {
         self.fullscreen = false;
         self
@@ -92,6 +95,7 @@ impl GuiContext {
         &mut self.comm
     }
 
+    #[allow(unused)]
     pub fn cancel_token(&mut self) -> &mut CancelToken {
         &mut self.cancel_token
     }
