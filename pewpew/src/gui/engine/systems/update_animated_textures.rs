@@ -14,10 +14,10 @@ pub fn run(world: &mut World, game_time: &mut Stopwatch) {
                 texture.next_keyframe_switch_at_elapsed_game_time =
                     Some(next_keyframe_switch_time + texture.keyframe_duration.as_millis());
 
-                if texture.current_keyframe == texture.num_frames {
-                    if let Some(event) = &mut texture.animation_end_event {
-                        event.trigger();
-                    }
+                if texture.current_keyframe == texture.num_frames
+                    && let Some(event) = &mut texture.animation_end_event
+                {
+                    event.trigger();
                 }
 
                 if texture.repeat {

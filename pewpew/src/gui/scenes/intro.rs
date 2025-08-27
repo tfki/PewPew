@@ -47,9 +47,11 @@ pub fn run(gui_context: &mut GuiContext) {
         world.spawn((texture,));
 
         world.spawn((Text{
-            text: "Morehuhn".to_string(),
+            text: "Moorhuhn".to_string(),
             position: PointWithAlignment::new_center(Point { x: 2560/2, y: 2*1440/3 }),
-            scale: 1.0,
+            scale_numerator: 1,
+            scale_denominator: 1,
+            original_point: Point { x: 2560/2, y: 2*1440/3 },
             color: Color::YELLOW,
         },));
 

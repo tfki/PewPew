@@ -11,4 +11,6 @@ pub fn run(comm: GuiComm, cancel_token: CancelToken) {
 
     scenes::intro::run(&mut gui_context);
     scenes::pregame::run(&mut gui_context);
+    scenes::game::run(&mut gui_context);
+    scenes::sandbox::run(&mut gui_context);
 }
