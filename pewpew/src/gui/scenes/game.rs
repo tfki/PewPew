@@ -1,6 +1,6 @@
 use crate::gui::engine::components::movement::Movement;
 use crate::gui::engine::components::point_with_alignment::{HAlign, PointWithAlignment, VAlign};
-use crate::gui::engine::components::texture::Texture;
+use crate::gui::engine::components::texture::{AnimationEndBehavior, Texture};
 use crate::gui::engine::components::{texture, timer, Point};
 use crate::gui::engine::event::Event;
 use crate::gui::engine::gui_context::GuiContext;
@@ -81,7 +81,7 @@ pub fn run(gui_context: &mut GuiContext) {
         let mut texture_shell_animated = texture::Builder::new(0, position)
             .with_num_frames(21)
             .with_vertical_flip()
-            .looping()
+            .with_animation_end_behavior(AnimationEndBehavior::Loop)
             .with_scale(2.0)
             .with_frame_advance_interval(Duration::from_millis(66))
             .build();
@@ -89,7 +89,7 @@ pub fn run(gui_context: &mut GuiContext) {
         let mut texture_shell_without_animation = texture::Builder::new(0, position)
             .with_num_frames(21)
             .with_vertical_flip()
-            .looping()
+            .with_animation_end_behavior(AnimationEndBehavior::Loop)
             .with_scale(2.0)
             .with_frame_advance_interval(Duration::MAX)
             .build();

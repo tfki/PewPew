@@ -10,6 +10,7 @@ use sdl2::pixels::Color;
 use std::path::Path;
 use std::thread;
 use std::time::{Duration, SystemTime};
+use crate::gui::engine::components::texture::AnimationEndBehavior;
 use crate::gui::engine::event::Event;
 
 pub fn run(gui_context: &mut GuiContext) {
@@ -38,7 +39,7 @@ pub fn run(gui_context: &mut GuiContext) {
         let texture = texture::Builder::new(0, position)
             .with_num_frames(14)
             .with_vertical_flip()
-            .looping()
+            .with_animation_end_behavior(AnimationEndBehavior::Loop)
             .with_scale(4.0)
             .with_frame_advance_interval(Duration::from_millis(200))
             .on_animation_end(intro_done_event.clone())

@@ -3,6 +3,13 @@ use crate::gui::engine::components::Point;
 use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
 use crate::gui::engine::event::Event;
 
+#[derive(Clone, Copy)]
+pub enum AnimationEndBehavior {
+    Loop,
+    Despawn,
+    Freeze,
+}
+
 #[derive(Clone)]
 pub struct Texture {
     pub position: PointWithAlignment,
@@ -15,7 +22,7 @@ pub struct Texture {
     pub image_id: usize,
     pub num_frames: u32,
     pub current_keyframe: u32,
-    pub repeat: bool,
+    pub animation_end_behavior: AnimationEndBehavior,
     pub scale: f32,
     pub flip_horizontally: bool,
     pub flip_vertically: bool,
@@ -39,7 +46,7 @@ pub struct Builder {
     image_id: usize,
     num_frames: u32,
     current_frame: u32,
-    looping: bool,
+    animation_end_behavior: AnimationEndBehavior,
     scale: f32,
     flip_horizontally: bool,
     flip_vertically: bool,
@@ -58,7 +65,6 @@ impl Builder {
             z_index: 0,
             num_frames: 1,
             current_frame: 0,
-            looping: false,
             flip_vertically: false,
             flip_horizontally: false,
             scale: 1.0,
@@ -67,6 +73,7 @@ impl Builder {
             animation_end_event: None,
             at_viewport_edge_event: None,
             outside_viewport_event: None,
+            animation_end_behavior: AnimationEndBehavior::Despawn,
         }
     }
 
@@ -97,8 +104,8 @@ impl Builder {
         self
     }
 
-    pub fn looping(mut self) -> Self {
-        self.looping = true;
+    pub fn with_animation_end_behavior(mut self, animation_end_behavior: AnimationEndBehavior) -> Self {
+        self.animation_end_behavior = animation_end_behavior;
         self
     }
 
@@ -106,7 +113,7 @@ impl Builder {
         self.scale = scale;
         self
     }
-    
+
     #[allow(unused)]
     pub fn with_rotation_deg(mut self, rotation_deg: f64) -> Self {
         self.rotation_deg = rotation_deg;
@@ -136,7 +143,7 @@ impl Builder {
             z_index: self.z_index,
             num_frames: self.num_frames,
             current_keyframe: self.current_frame,
-            repeat: self.looping,
+            animation_end_behavior: self.animation_end_behavior,
             scale: self.scale,
             flip_horizontally: self.flip_vertically,
             flip_vertically: self.flip_horizontally,
