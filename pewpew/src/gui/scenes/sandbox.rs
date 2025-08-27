@@ -1,5 +1,6 @@
 use crate::gui::engine::components::movement::Movement;
 use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
+use crate::gui::engine::components::texture::{AnimationEndBehavior, Texture};
 use crate::gui::engine::components::{hitbox, texture, timer, Point, Text};
 use crate::gui::engine::event::Event;
 use crate::gui::engine::gui_context::GuiContext;
@@ -43,6 +44,8 @@ pub fn run(gui_context: &mut GuiContext) {
         let mut world = World::new();
         let mut game_time = Stopwatch::new_paused();
 
+        let mut chickens_with_events = Vec::new();
+
         let periodical_event = Event::default();
         let timer = timer::Builder::new(Duration::from_secs(3), periodical_event.clone()).build();
         world.spawn((timer,));
@@ -73,7 +76,7 @@ pub fn run(gui_context: &mut GuiContext) {
                 let texture = texture::Builder::new(1, position)
                     .with_num_frames(13)
                     .with_vertical_flip()
-                    .looping()
+                    .with_animation_end_behavior(AnimationEndBehavior::Loop)
                     .with_frame_advance_interval(Duration::from_millis(
                         (10 * (10 - (x + y))) as u64,
                     ))
@@ -84,11 +87,16 @@ pub fn run(gui_context: &mut GuiContext) {
                     y: 0,
                 });
 
-                world.spawn((
+                let event = Event::default();
+                let entity = world.spawn((
                     texture,
-                    hitbox::Builder::new(position, 200, 200).build(),
+                    hitbox::Builder::new(position, 200, 200)
+                        .on_hit(event.clone())
+                        .build(),
                     movement,
                 ));
+
+                chickens_with_events.push((entity, event));
             }
         }
 
@@ -100,6 +108,26 @@ pub fn run(gui_context: &mut GuiContext) {
 
         {
             for frame in 0..500 {
+                for (entity, event) in &mut chickens_with_events {
+                    if event.consume() {
+                        let death_texture = {
+                            let texture = world.get::<(&Texture)>(*entity).unwrap();
+
+                            texture::Builder::new(2, texture.position)
+                                .with_num_frames(8)
+                                .with_frame_advance_interval(Duration::from_millis(110))
+                                .with_animation_end_behavior(AnimationEndBehavior::Freeze)
+                                .build()
+                        };
+                        let movement = Movement::new(move |t| {
+                            Point{ x: 0, y: (t as f32 / 64.0).powi(2) as i32 }
+                        });
+
+                        world.spawn((death_texture, movement));
+                        world.despawn(*entity).unwrap();
+                    }
+                }
+
                 let frame_start = SystemTime::now();
 
                 gui_context.canvas().set_draw_color(Color::BLACK);

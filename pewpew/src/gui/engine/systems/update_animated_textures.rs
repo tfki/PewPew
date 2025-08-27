@@ -1,4 +1,4 @@
-use crate::gui::engine::components::texture::Texture;
+use crate::gui::engine::components::texture::{AnimationEndBehavior, Texture};
 use crate::gui::engine::stopwatch::Stopwatch;
 use hecs::World;
 
@@ -20,10 +20,12 @@ pub fn run(world: &mut World, game_time: &mut Stopwatch) {
                     event.trigger();
                 }
 
-                if texture.repeat {
-                    texture.current_keyframe %= texture.num_frames;
-                } else if !texture.repeat && texture.current_keyframe == texture.num_frames {
-                    to_be_despawned.push(id);
+                if texture.current_keyframe == texture.num_frames {
+                    match texture.animation_end_behavior {
+                        AnimationEndBehavior::Loop => texture.current_keyframe %= texture.num_frames,
+                        AnimationEndBehavior::Despawn => to_be_despawned.push(id),
+                        AnimationEndBehavior::Freeze => texture.current_keyframe -= 1,
+                    }
                 }
             }
             None => {

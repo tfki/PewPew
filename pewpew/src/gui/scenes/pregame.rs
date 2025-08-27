@@ -17,6 +17,7 @@ use sdl2::render::BlendMode;
 use std::path::Path;
 use std::thread;
 use std::time::{Duration, SystemTime};
+use crate::gui::engine::components::texture::AnimationEndBehavior;
 
 pub fn run(gui_context: &mut GuiContext) {
     let viewport = {
@@ -295,7 +296,7 @@ fn spawn_random_chickens(viewport: Rect, n: u32, world: &mut World) -> Vec<(Even
         };
 
         let mut texture_builder = texture::Builder::new(0, position)
-            .looping()
+            .with_animation_end_behavior(AnimationEndBehavior::Loop)
             .with_scale(rand::rng().random::<f32>() + 0.5)
             .with_num_frames(13)
             .with_frame_advance_interval(Duration::from_millis(rand::rng().random_range(50..150)))
