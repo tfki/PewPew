@@ -4,6 +4,7 @@ use crate::comm::message::ToHitreg;
 use crate::common::cancel_token::CancelToken;
 use log::{debug, error, info};
 use std::collections::VecDeque;
+use std::time::SystemTime;
 
 #[derive(Debug)]
 enum State {
@@ -11,25 +12,27 @@ enum State {
     WaitingForFrames(u32),
 }
 
-#[derive(Debug, PartialEq)]
-struct Color {
-    pub black: u16,
-    pub white: u16,
-}
+// TODO set to middle of black and white
+const BRIGHTNESS_THRESHOLD: u16 = 10000;
 
 pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
     move || {
-        // i suggest implementing the hitreg with some kind of state machine
-
         let mut state = State::Idle;
         let mut chicken_data = Vec::new();
-        let mut gui_sequences: Vec<bool> = Vec::new();
-        let mut brightness_buffer: VecDeque<u16> = VecDeque::with_capacity(16);
-        fn store_brighness_in_buffer(brightness_buffer: &mut VecDeque<u16>, val:u16) {
-            if brightness_buffer.len() == brightness_buffer.capacity() {
-            brightness_buffer.pop_back();
+        let mut gui_sequence: Vec<bool> = Vec::new();
+        let mut gui_timestamps: Vec<SystemTime> = Vec::new();
+        let mut serial_brightness_buffer: VecDeque<(u16, u32, bool)> = VecDeque::with_capacity(20);
+
+        fn store_brightness_in_buffer(buf: &mut VecDeque<(u16, u32, bool)>, sensortag_id: u16, time: u32, val:u16) {
+            if buf.len() == buf.capacity() {
+            buf.pop_back();
             } else {
-                brightness_buffer.push_front(val);
+                if val >= BRIGHTNESS_THRESHOLD {
+                    // WHITE
+                    buf.push_front((sensortag_id, time, true));
+                } else {
+                    buf.push_front((sensortag_id, time, false));
+                }
             }
         }
 
@@ -51,8 +54,7 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                         debug!(target: "Hitreg Thread", "changing state to {state:?}");
                     }
                     ToHitreg::FromSerial(serial_to_hit_reg) => {
-                        store_brighness_in_buffer(&mut brightness_buffer, serial_to_hit_reg.value_raw);
-
+                        store_brightness_in_buffer(&mut serial_brightness_buffer, serial_to_hit_reg.sensortag_id, serial_to_hit_reg.timestamp, serial_to_hit_reg.value_raw);
                     }
                     x => {
                         error!(target: "Hitreg Thread", "hitreg received unexpected message in state {state:?}, exiting: {x:?}");
@@ -62,30 +64,40 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                 State::WaitingForFrames(0) => {
                     // all frames of the flashing sequence have arrived
                     // tell the gui the results
-
-                    // for, just tell the gui that the first chicken was hit
-                    let hit = chicken_data.first().map(|(entity, _)| *entity);
+                    // TODO work with timings in gui_timestamps? test delay on gui_sequence
+                    if gui_timestamps.len() != chicken_data.first().unwrap().1.len() {
+                        error!(target: "Hitreg Thread", "amount of frame-timestamps from gui does not match length of flashing sequences");
+                    }
+                    let buffer_slice = &gui_sequence.
+                        iter().
+                        take(chicken_data[0].1.len()).
+                        copied().
+                        collect::<Vec<_>>();
+                    let hit = chicken_data
+                        .iter()
+                        .find_map(
+                            |(entity, sequence)|
+                                {(sequence == buffer_slice).then_some(*entity)}
+                        );
                     comm.send(HitregToGui::Result(hit)).unwrap(); // no hit
-
+                    gui_timestamps.clear();
                     state = State::Idle;
                     debug!(target: "Hitreg Thread", "changing state to {state:?}");
                 }
                 State::WaitingForFrames(num_frames_to_go) => {
                     match comm.recv().unwrap() {
-                        ToHitreg::FromGui(GuiToHitreg::Frame(_time)) => {
-                            // look at the values in the brightness buffer here
-                            // to determine if sensortag is seeing black or white
-                            // white => true; black => false
-                            // TODO set default to black which is prob not 0
-                            if false {// brightness_buffer.front().unwrap_or(&0).hasColor(Color {black: 1000}) {
-                                // TODO save in gui_sequences && implement hasColor on VecDequeue?
+                        ToHitreg::FromGui(GuiToHitreg::Frame(time)) => {
+                            gui_timestamps.push(time);
+                            if serial_brightness_buffer.is_empty() {
+                                error!(target: "Hitreg Thread", "no brightness measurements available");
                             }
-                            gui_sequences.push(false);
+                            // read latest serial_brightness_buffer value into gui_sequence
+                            gui_sequence.push(serial_brightness_buffer.front().copied().unwrap().2);
                             state = State::WaitingForFrames(num_frames_to_go - 1);
                             debug!(target: "Hitreg Thread", "changing state to {state:?}");
                         }
                         ToHitreg::FromSerial(serial_to_hit_reg) => {
-                            store_brighness_in_buffer(&mut brightness_buffer, serial_to_hit_reg.value_raw);
+                            store_brightness_in_buffer(&mut serial_brightness_buffer, serial_to_hit_reg.sensortag_id, serial_to_hit_reg.timestamp, serial_to_hit_reg.value_raw);
                         }
                         x => {
                             error!(target: "Hitreg Thread", "hitreg received unexpected message in state {state:?}, exiting: {x:?}");
