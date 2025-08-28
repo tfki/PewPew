@@ -65,19 +65,15 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                     // all frames of the flashing sequence have arrived
                     // tell the gui the results
                     // TODO work with timings in gui_timestamps? test delay on gui_sequence
-                    if gui_timestamps.len() != chicken_data.first().unwrap().1.len() {
+                    let desired_length = chicken_data.first().unwrap().1.len();
+                    if gui_timestamps.len() != desired_length || gui_sequence.len() != desired_length {
                         error!(target: "Hitreg Thread", "amount of frame-timestamps from gui does not match length of flashing sequences");
                     }
-                    let buffer_slice = &gui_sequence.
-                        iter().
-                        take(chicken_data[0].1.len()).
-                        copied().
-                        collect::<Vec<_>>();
                     let hit = chicken_data
                         .iter()
                         .find_map(
                             |(entity, sequence)|
-                                {(sequence == buffer_slice).then_some(*entity)}
+                                {(sequence == &gui_sequence).then_some(*entity)}
                         );
                     comm.send(HitregToGui::Result(hit)).unwrap(); // no hit
                     gui_timestamps.clear();
