@@ -12,8 +12,9 @@ enum State {
     WaitingForFrames(u32),
 }
 
-// TODO set to middle of black and white
-const BRIGHTNESS_THRESHOLD: u16 = 10000;
+// black monitor => 0-5 lux
+// white monitor => 1500-2500 lux
+const BRIGHTNESS_THRESHOLD: u16 = 800;
 
 pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
     move || {
