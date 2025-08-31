@@ -3,13 +3,6 @@ use crate::gui::engine::components::Point;
 use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
 use crate::gui::engine::event::Event;
 
-#[derive(Clone, Copy)]
-pub enum AnimationEndBehavior {
-    Loop,
-    Despawn,
-    Freeze,
-}
-
 #[derive(Clone)]
 pub struct Texture {
     pub position: PointWithAlignment,
@@ -22,7 +15,6 @@ pub struct Texture {
     pub image_id: usize,
     pub num_frames: u32,
     pub current_keyframe: u32,
-    pub animation_end_behavior: AnimationEndBehavior,
     pub scale: f32,
     pub flip_horizontally: bool,
     pub flip_vertically: bool,
@@ -46,7 +38,6 @@ pub struct Builder {
     image_id: usize,
     num_frames: u32,
     current_frame: u32,
-    animation_end_behavior: AnimationEndBehavior,
     scale: f32,
     flip_horizontally: bool,
     flip_vertically: bool,
@@ -73,7 +64,6 @@ impl Builder {
             animation_end_event: None,
             at_viewport_edge_event: None,
             outside_viewport_event: None,
-            animation_end_behavior: AnimationEndBehavior::Despawn,
         }
     }
 
@@ -101,11 +91,6 @@ impl Builder {
 
     pub fn with_z_index(mut self, z_index: i32) -> Self {
         self.z_index = z_index;
-        self
-    }
-
-    pub fn with_animation_end_behavior(mut self, animation_end_behavior: AnimationEndBehavior) -> Self {
-        self.animation_end_behavior = animation_end_behavior;
         self
     }
 
@@ -143,7 +128,6 @@ impl Builder {
             z_index: self.z_index,
             num_frames: self.num_frames,
             current_keyframe: self.current_frame,
-            animation_end_behavior: self.animation_end_behavior,
             scale: self.scale,
             flip_horizontally: self.flip_vertically,
             flip_vertically: self.flip_horizontally,

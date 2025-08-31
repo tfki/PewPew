@@ -1,4 +1,4 @@
-use crate::gui::engine::components::texture::{AnimationEndBehavior, Texture};
+use crate::gui::engine::components::texture::Texture;
 use crate::gui::engine::stopwatch::Stopwatch;
 use hecs::World;
 
@@ -7,7 +7,7 @@ pub fn run(world: &mut World, game_time: &mut Stopwatch) {
     let mut to_be_despawned = Vec::new();
 
     // draw normal textures
-    for (id, texture) in world.query_mut::<&mut Texture>() {
+    for (_, texture) in world.query_mut::<&mut Texture>() {
         match texture.next_keyframe_switch_at_elapsed_game_time {
             Some(next_keyframe_switch_time) if next_keyframe_switch_time <= game_elapsed => {
                 texture.current_keyframe += 1;
@@ -21,12 +21,11 @@ pub fn run(world: &mut World, game_time: &mut Stopwatch) {
                 }
 
                 if texture.current_keyframe == texture.num_frames {
-                    match texture.animation_end_behavior {
-                        AnimationEndBehavior::Loop => texture.current_keyframe %= texture.num_frames,
-                        AnimationEndBehavior::Despawn => to_be_despawned.push(id),
-                        AnimationEndBehavior::Freeze => texture.current_keyframe -= 1,
+                    if let Some(event) = &mut texture.animation_end_event {
+                        event.trigger();
                     }
                 }
+                texture.current_keyframe %= texture.num_frames;
             }
             None => {
                 texture.next_keyframe_switch_at_elapsed_game_time =

@@ -1,7 +1,7 @@
-use crate::gui::engine::components::Text;
 use crate::gui::engine::resources::Resources;
 use hecs::World;
 use sdl2::render::{TextureCreator, TextureQuery, WindowCanvas};
+use crate::gui::engine::components::text::Text;
 
 pub fn run<'a>(
     canvas: &mut WindowCanvas,

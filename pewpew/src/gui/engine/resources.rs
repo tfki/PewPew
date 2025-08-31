@@ -1,7 +1,7 @@
-use crate::gui::engine::components::Text;
 use sdl2::render::Texture;
 use sdl2::ttf::Font;
 use std::collections::HashMap;
+use crate::gui::engine::components::text::Text;
 
 pub struct Resources<'sdl_ctx> {
     pub images: Vec<Texture<'sdl_ctx>>,

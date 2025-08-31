@@ -12,7 +12,7 @@ fn main() {
     let (serial_comm, hitreg_comm, gui_comm) = comm::new();
     let cancelled = CancelToken::default();
 
-    thread::spawn(pewpew::serial::run(serial_comm, cancelled.clone()));
+    //thread::spawn(pewpew::serial::run(serial_comm, cancelled.clone()));
     thread::spawn(hitreg::run(hitreg_comm, cancelled.clone()));
 
     // run gui on main thread

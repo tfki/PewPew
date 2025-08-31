@@ -1,15 +1,27 @@
 use crate::gui::engine::components::texture::Texture;
 use crate::gui::engine::resources::Resources;
-use hecs::{Entity, World};
+use hecs::World;
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
 
 pub fn run(canvas: &mut WindowCanvas, world: &mut World, resources: &mut Resources) {
-    let mut textures: Vec<(Entity, &mut Texture)> =
-        world.query_mut::<&mut Texture>().into_iter().collect();
+    let mut textures = Vec::new();
+
+    for (_, pair) in world.query_mut::<(Option<&mut Texture>, Option<&mut Vec<Texture>>)>() {
+        match pair {
+            (Some(_), Some(_)) => panic!("do not use Texture and Vec<Texture> in one entity"),
+            (Some(tex), None) => textures.push(tex),
+            (None, Some(vec)) => {
+                for tex in vec {
+                    textures.push(tex);
+                }
+            }
+            (None, None) => {}
+        }
+    }
 
     // textures with lower z_index must be drawn first
-    textures.sort_by(|(_, texture1), (_, texture2)| texture1.z_index.cmp(&texture2.z_index));
+    textures.sort_by(|texture1, texture2| texture1.z_index.cmp(&texture2.z_index));
 
     let viewport_rect = {
         let (x, y) = canvas.output_size().unwrap();
@@ -17,7 +29,7 @@ pub fn run(canvas: &mut WindowCanvas, world: &mut World, resources: &mut Resourc
     };
 
     // draw normal textures
-    for (_id, texture) in textures {
+    for texture in textures {
         let sprite = &resources.images[texture.image_id];
         let query = sprite.query();
         let tile_size = (query.width, query.height / texture.num_frames);
