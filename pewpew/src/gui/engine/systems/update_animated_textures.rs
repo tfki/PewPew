@@ -4,7 +4,6 @@ use hecs::World;
 
 pub fn run(world: &mut World, game_time: &mut Stopwatch) {
     let game_elapsed = game_time.elapsed_ms();
-    let mut to_be_despawned = Vec::new();
 
     // draw normal textures
     for (_, texture) in world.query_mut::<&mut Texture>() {
@@ -20,10 +19,10 @@ pub fn run(world: &mut World, game_time: &mut Stopwatch) {
                     event.trigger();
                 }
 
-                if texture.current_keyframe == texture.num_frames {
-                    if let Some(event) = &mut texture.animation_end_event {
-                        event.trigger();
-                    }
+                if texture.current_keyframe == texture.num_frames
+                    && let Some(event) = &mut texture.animation_end_event
+                {
+                    event.trigger();
                 }
                 texture.current_keyframe %= texture.num_frames;
             }
@@ -33,9 +32,5 @@ pub fn run(world: &mut World, game_time: &mut Stopwatch) {
             }
             _ => {}
         }
-    }
-
-    for id in to_be_despawned {
-        world.despawn(id).unwrap();
     }
 }

@@ -15,8 +15,4 @@ impl Movement {
             first_invocation_game_time: None,
         }
     }
-
-    pub fn id() -> Movement {
-        Movement::new(|i| Point{ x: 0, y: 0 })
-    }
 }

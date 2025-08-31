@@ -19,7 +19,7 @@ pub enum LoadAllTexturesError {
 pub fn load_all_textures<'a>(resources: &mut Resources<'a>, texture_creator: &'a TextureCreator<WindowContext>) -> Result<HashMap<String, usize>, LoadAllTexturesError> {
     let mut file_idx_map = HashMap::new();
 
-    let files_to_load = vec![Path::new("res/flying_huhn.png"), Path::new("res/ammo.png")];
+    let files_to_load = [Path::new("res/flying_huhn.png"), Path::new("res/ammo.png")];
 
     for (idx, path) in files_to_load.iter().enumerate() {
         //                           -------------------------wat?--------------------------

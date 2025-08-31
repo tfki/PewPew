@@ -53,6 +53,7 @@ impl Builder {
         self
     }
 
+    #[allow(unused)]
     pub fn with_scale(mut self, numerator: u32, denominator: u32) -> Self {
         self.scale_numerator = numerator;
         self.scale_denominator = denominator;

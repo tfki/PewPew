@@ -92,7 +92,7 @@ pub trait MakeAmmoWork {
     ) -> Action {
         let mut shell_entities = Vec::new();
         Action::new(
-            move |entity, world| {
+            move |_, world| {
                 if shell_entities.is_empty() {
                     // reload
 

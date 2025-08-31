@@ -2,7 +2,7 @@ use crate::gui::engine::components::action::Action;
 use crate::gui::engine::components::condition::Condition;
 use crate::gui::engine::components::movement::Movement;
 use crate::gui::engine::components::point_with_alignment::{HAlign, PointWithAlignment, VAlign};
-use crate::gui::engine::components::{text, texture, timer, Point};
+use crate::gui::engine::components::{text, texture, Point};
 use crate::gui::engine::event::Event;
 use crate::gui::engine::gui_context::GuiContext;
 use crate::gui::engine::resources::Resources;
@@ -11,14 +11,12 @@ use crate::gui::engine::systems;
 use crate::gui::scenes::common::magazine::Magazine;
 use crate::gui::scenes::common::scenery::Scenery;
 use crate::gui::scenes::load_all_textures;
-use hecs::{Bundle, Entity, World};
+use hecs::World;
 use log::trace;
 use rand::Rng;
-use sdl2::image::LoadTexture;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::BlendMode;
-use std::path::Path;
 use std::thread;
 use std::time::{Duration, SystemTime};
 
@@ -27,7 +25,7 @@ mod custom_systems;
 
 pub trait SpawnMagazineAction {
     fn spawn_magazine_when(
-        mut shoot_event: Event,
+        shoot_event: Event,
         position: PointWithAlignment,
         num_shells: usize,
         scale: f32,
@@ -134,7 +132,7 @@ pub fn run(gui_context: &mut GuiContext) {
         // once it has left the viewport
         spawn_random_chickens(viewport, 250, &mut world);
 
-        let condition = Condition::new(|world| true, Event::default());
+        let condition = Condition::new(|_| true, Event::default());
         world.spawn((condition,));
 
         game_time.resume();
@@ -145,6 +143,7 @@ pub fn run(gui_context: &mut GuiContext) {
             gui_context.canvas().set_draw_color(Color::BLACK);
             gui_context.canvas().clear();
 
+            systems::work_conditions::run(&mut world);
             systems::work_actions::run(&mut world);
             systems::work_timers::run(&mut world, &mut game_time);
             systems::update_movements::run(&mut world, &mut game_time);

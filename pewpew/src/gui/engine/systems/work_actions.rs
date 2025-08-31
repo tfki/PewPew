@@ -7,7 +7,7 @@ pub fn run(world: &mut World) {
     // i want both actions to run if their event triggered
 
     // collect single-action-entities
-    let mut entities_with_action = world
+    let entities_with_action = world
         .query::<&mut Action>()
         .iter()
         .filter_map(
@@ -33,7 +33,7 @@ pub fn run(world: &mut World) {
         .collect::<Vec<_>>();
 
     // handle all entities with a single action
-    for (entity_id, mut action) in entities_with_action {
+    for (entity_id, action) in entities_with_action {
         {
             let mut locked_action = action.lock().unwrap();
             locked_action(entity_id, world);
@@ -46,7 +46,7 @@ pub fn run(world: &mut World) {
     }
 
     // handle all entities with a vector of actions
-    for (entity_id, idx, mut action) in entities_with_action_vec {
+    for (entity_id, idx, action) in entities_with_action_vec {
         {
             let mut locked_action = action.lock().unwrap();
             locked_action(entity_id, world);

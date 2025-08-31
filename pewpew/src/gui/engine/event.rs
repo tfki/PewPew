@@ -18,6 +18,7 @@ impl Default for Event {
 }
 
 impl Event {
+    #[allow(unused)]
     pub fn trigger_after(self, duration: Duration) -> Timer {
         timer::Builder::new(duration, self).build()
     }
@@ -44,6 +45,7 @@ impl Event {
         }
     }
 
+    #[allow(unused)]
     pub fn reset(&mut self) {
         // we are single threaded, so unwrap is ok
         self.fired.lock().unwrap()[self.my_idx] = false;
