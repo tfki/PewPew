@@ -1,9 +1,9 @@
 use crate::gui::engine::components::hitbox::Hitbox;
 use crate::gui::engine::components::movement::Movement;
 use crate::gui::engine::components::texture::Texture;
-use crate::gui::engine::components::Text;
 use crate::gui::engine::stopwatch::Stopwatch;
 use hecs::World;
+use crate::gui::engine::components::text::Text;
 
 pub fn run(world: &mut World, game_time: &mut Stopwatch) {
     let game_elapsed = game_time.elapsed_ms();

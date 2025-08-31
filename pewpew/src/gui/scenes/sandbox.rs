@@ -1,7 +1,7 @@
 use crate::gui::engine::components::movement::Movement;
 use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
-use crate::gui::engine::components::texture::{AnimationEndBehavior, Texture};
-use crate::gui::engine::components::{hitbox, texture, timer, Point, Text};
+use crate::gui::engine::components::texture::Texture;
+use crate::gui::engine::components::{hitbox, text::Text, texture, timer, Point};
 use crate::gui::engine::event::Event;
 use crate::gui::engine::gui_context::GuiContext;
 use crate::gui::engine::resources::Resources;
@@ -76,7 +76,6 @@ pub fn run(gui_context: &mut GuiContext) {
                 let texture = texture::Builder::new(1, position)
                     .with_num_frames(13)
                     .with_vertical_flip()
-                    .with_animation_end_behavior(AnimationEndBehavior::Loop)
                     .with_frame_advance_interval(Duration::from_millis(
                         (10 * (10 - (x + y))) as u64,
                     ))
@@ -116,11 +115,11 @@ pub fn run(gui_context: &mut GuiContext) {
                             texture::Builder::new(2, texture.position)
                                 .with_num_frames(8)
                                 .with_frame_advance_interval(Duration::from_millis(110))
-                                .with_animation_end_behavior(AnimationEndBehavior::Freeze)
                                 .build()
                         };
-                        let movement = Movement::new(move |t| {
-                            Point{ x: 0, y: (t as f32 / 64.0).powi(2) as i32 }
+                        let movement = Movement::new(move |t| Point {
+                            x: 0,
+                            y: (t as f32 / 64.0).powi(2) as i32,
                         });
 
                         world.spawn((death_texture, movement));
