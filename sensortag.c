@@ -44,6 +44,7 @@
 static const uint8_t MAGAZINE_SIZE = 8;
 static uint8_t magazine_left = MAGAZINE_SIZE;
 static const int ONE_SECOND_COUNTER_VALUE = 444; 
+static const float G_RELOAD_WHIP_THRESHOLD = 3;
 
 
 static float latestGyroValue[3];
@@ -260,6 +261,8 @@ void *main_thread(void *arg0)
     }
 
     uint16_t last_raw_lux = 0;
+    float latestGyroValue[3];
+    float latestAccValue[3];
     int last_button_trigger = 0;
     int last_button_blinky = 0;
     bool is_init = false;
@@ -312,8 +315,18 @@ void *main_thread(void *arg0)
                 GPIO_toggle(Board_GPIO_LED0);
             }
 
-            // TODO CHECK GYRO
-            // sendreloaded..()
+            if (SensorMpu9250_accRead(tmp)) {
+                latestAccValue[0] = SensorMpu9250_accConvert(tmp[0]);
+                latestAccValue[1] = SensorMpu9250_accConvert(tmp[1]);
+                latestAccValue[2] = SensorMpu9250_accConvert(tmp[2]);
+
+                if (latestAccValue[0] > G_RELOAD_WHIP_THRESHOLD 
+                    || latestAccValue[1] > G_RELOAD_WHIP_THRESHOLD
+                    || latestAccValue[2] > G_RELOAD_WHIP_THRESHOLD) { // reload succesful
+                        magazine_left = MAGAZINE_SIZE;
+                        rf_send_reloaded_message();
+                    }
+            }
         }
 
         /*
@@ -325,12 +338,6 @@ void *main_thread(void *arg0)
             latestGyroValue[0] = SensorMpu9250_gyroConvert(tmp[0]);
             latestGyroValue[1] = SensorMpu9250_gyroConvert(tmp[1]);
             latestGyroValue[2] = SensorMpu9250_gyroConvert(tmp[2]);
-        }
-
-        if (SensorMpu9250_accRead(tmp)) {
-            latestAccValue[0] = SensorMpu9250_accConvert(tmp[0]);
-            latestAccValue[1] = SensorMpu9250_accConvert(tmp[1]);
-            latestAccValue[2] = SensorMpu9250_accConvert(tmp[2]);
         }
 
         uint8_t rawPres;
