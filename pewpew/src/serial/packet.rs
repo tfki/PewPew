@@ -204,7 +204,7 @@ mod tests {
 
     #[test]
     fn invalid_packet_types() {
-        let invalid_codes = vec![0, /* 1, */ /* 2, */ 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        let invalid_codes = vec![0, /* 1, */ /* 2, */ /* 3, */ 4, 5, 6, 7, 8, 9, 10, 11];
         for code in invalid_codes {
             let packet = Packet::try_from(
                 [
