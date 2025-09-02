@@ -2,11 +2,11 @@ pub mod config;
 pub mod packet;
 pub mod reader;
 
-use crate::common::cancel_token::CancelToken;
 use crate::comm::message::{SerialToGui, SerialToGuiKind, SerialToHitReg};
 use crate::comm::serial::SerialComm;
+use crate::common::cancel_token::CancelToken;
 use crate::serial::config::SerialConfig;
-use crate::serial::packet::PacketContent;
+use crate::serial::packet::{MagazineStatus, PacketContent};
 use crate::serial::reader::SerialReader;
 use log::{error, info, warn};
 
@@ -43,13 +43,13 @@ pub fn run(comm: SerialComm, cancel_token: CancelToken) -> impl FnOnce() {
             match packet {
                 Ok(packet) => {
                     match packet.content {
-                        PacketContent::ButtonPressed => {
+                        PacketContent::ButtonPressed(MagazineStatus{ammo, ammo_max}) => {
                             if comm
                                 .send_to_gui(SerialToGui {
                                     sensortag_id: packet.sensortag_id,
                                     timestamp: packet.timestamp,
-                                    ammo: 0,     // TODO add ammo to packets
-                                    ammo_max: 0, // TODO add ammo to packets
+                                    ammo: ammo,
+                                    ammo_max: ammo_max,
                                     kind: SerialToGuiKind::Shot,
                                 })
                                 .is_err()
@@ -72,6 +72,23 @@ pub fn run(comm: SerialComm, cancel_token: CancelToken) -> impl FnOnce() {
                                 // send only ever fails if the receiver does not exist anymore
                                 // so there is no point in continuing
                                 error!(target: "Serial Thread", "failed to send packet to hitreg thread, exiting");
+                                return;
+                            }
+                        }
+                        PacketContent::Reloaded(MagazineStatus{ammo, ammo_max}) => {
+                            if comm
+                                .send_to_gui(SerialToGui {
+                                    sensortag_id: packet.sensortag_id,
+                                    timestamp: packet.timestamp,
+                                    ammo: ammo,
+                                    ammo_max: ammo_max,
+                                    kind: SerialToGuiKind::Reload,
+                                })
+                                .is_err()
+                            {
+                                // send only ever fails if the receiver does not exist anymore
+                                // so there is no point in continuing
+                                error!(target: "Serial Thread", "failed to send packet to gui thread, exiting");
                                 return;
                             }
                         }
