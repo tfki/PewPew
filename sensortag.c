@@ -133,18 +133,6 @@ void rf_send(uint8_t* data, size_t length) {
     }
 }
 
-static void rf_send_button_pressed_message() {
-    uint8_t id = 2;
-
-    rf_send_magazine_message(id);
-}
-
-static void rf_send_reloaded_message() {
-    uint8_t id = 3;
-
-    rf_send_magazine_message(id);
-}
-
 static void rf_send_magazine_message(uint8_t id) {
     const size_t length = 10;
     uint8_t buffer[length];
@@ -163,6 +151,18 @@ static void rf_send_magazine_message(uint8_t id) {
 
     buffer[length - 1] = 255;
     rf_send(buffer, length);
+}
+
+static void rf_send_button_pressed_message() {
+    uint8_t id = 2;
+
+    rf_send_magazine_message(id);
+}
+
+static void rf_send_reloaded_message() {
+    uint8_t id = 3;
+
+    rf_send_magazine_message(id);
 }
 
 static void rf_send_brightness_message(uint16_t brightness) {
@@ -315,6 +315,7 @@ void *main_thread(void *arg0)
                 GPIO_toggle(Board_GPIO_LED0);
             }
 
+            uint16_t tmp[3];
             if (SensorMpu9250_accRead(tmp)) {
                 latestAccValue[0] = SensorMpu9250_accConvert(tmp[0]);
                 latestAccValue[1] = SensorMpu9250_accConvert(tmp[1]);
