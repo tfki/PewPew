@@ -55,13 +55,32 @@ impl TryFrom<&[u8]> for Packet {
                 }
             }
             2 => {
-                if value.len() != 8 {
+                if value.len() != 10 {
                     Err(MessageParseError::InvalidPacketLength)
                 } else {
+                    let ammo = u8::from_le(value[7]);
+                    let ammo_max = u8::from_le(value[8]);
+                    let mag_status = MagazineStatus{ammo, ammo_max};
+
                     Ok(Packet {
                         sensortag_id: tag_id,
                         timestamp,
-                        content: PacketContent::ButtonPressed,
+                        content: PacketContent::ButtonPressed(mag_status),
+                    })
+                }
+            }
+            3 => {
+                if value.len() != 10 {
+                    Err(MessageParseError::InvalidPacketLength)
+                } else {
+                    let ammo = u8::from_le(value[7]);
+                    let ammo_max = u8::from_le(value[8]);
+                    let mag_status = MagazineStatus{ammo, ammo_max};
+
+                    Ok(Packet {
+                        sensortag_id: tag_id,
+                        timestamp,
+                        content: PacketContent::Reloaded(mag_status),
                     })
                 }
             }
@@ -71,14 +90,21 @@ impl TryFrom<&[u8]> for Packet {
 }
 
 #[derive(Debug, Copy, Clone)]
+pub struct MagazineStatus {
+    pub ammo: u8,
+    pub ammo_max: u8,
+}
+
+#[derive(Debug, Copy, Clone)]
 pub enum PacketContent {
-    ButtonPressed,
+    ButtonPressed(MagazineStatus),
     Brightness(u16),
+    Reloaded(MagazineStatus),
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::serial::packet::{MessageParseError, Packet, PacketContent};
+    use crate::serial::packet::{MagazineStatus, MessageParseError, Packet, PacketContent};
 
     #[test]
     fn button_press_packets() {
@@ -88,6 +114,8 @@ mod tests {
                     0xFE_u8, 0xDC, // 2 bytes tag id (56574)
                     0x12, 0x34, 0x56, 0x78, // 4 bytes timestamp (2018915346)
                     0x02, // 1 bytes packet type
+                    0x04, // bullets left
+                    0x08, // mag size
                     0x00, // 1 byte for the delimiter, can be anything
                           // the packet does not parse the delimiter, it just expects a byte to be there
                 ]
@@ -98,7 +126,7 @@ mod tests {
                 Ok(Packet {
                     sensortag_id: 56574,
                     timestamp: 2018915346,
-                    content: PacketContent::ButtonPressed,
+                    content: PacketContent::ButtonPressed(MagazineStatus{ammo: 4, ammo_max: 8}),
                 })
             ));
         }
@@ -109,6 +137,8 @@ mod tests {
                     0xCD_u8, 0xFE, // 2 bytes tag id (65229)
                     0x78, 0x56, 0x34, 0x12, // 4 bytes timestamp (305419896)
                     0x02, // 1 bytes packet type
+                    0x00, // bullets left
+                    0x08, // mag size
                     0xFF, // 1 byte for the delimiter, can be anything here
                           // the packet does not parse the delimiter, it just expects a byte to be there
                 ]
@@ -119,7 +149,7 @@ mod tests {
                 Ok(Packet {
                     sensortag_id: 65229,
                     timestamp: 305419896,
-                    content: PacketContent::ButtonPressed,
+                    content: PacketContent::ButtonPressed(MagazineStatus{ammo: 0, ammo_max: 8}),
                 })
             ));
         }
@@ -174,7 +204,7 @@ mod tests {
 
     #[test]
     fn invalid_packet_types() {
-        let invalid_codes = vec![0, /* 1, */ /* 2, */ 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        let invalid_codes = vec![0, /* 1, */ /* 2, */ /* 3, */ 4, 5, 6, 7, 8, 9, 10, 11];
         for code in invalid_codes {
             let packet = Packet::try_from(
                 [

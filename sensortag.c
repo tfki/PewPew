@@ -41,12 +41,14 @@
 #include "smartrf_settings/smartrf_settings.h"
 
 
-static uint16_t latestAdcValue;
+static const uint8_t MAGAZINE_SIZE = 8;
+static uint8_t magazine_left = MAGAZINE_SIZE;
+static const int ONE_SECOND_COUNTER_VALUE = 444; 
+static const float G_RELOAD_WHIP_THRESHOLD = 3;
+
+
 static float latestGyroValue[3];
 static float latestAccValue[3];
-static float latestTemp;
-static float latestHum;
-static uint32_t latestPress;
 
 static uint16_t my_id = 0;
 
@@ -54,12 +56,19 @@ static RF_Object rfObject;
 static RF_Handle rfHandle;
 static int time_counter = 0;
 static bool button_pressed = false;
+static bool is_button_cooldown = false;
 
 GPTimerCC26XX_Handle hTimer;
 void timerCallback(GPTimerCC26XX_Handle handle, GPTimerCC26XX_IntMask interruptMask) {
     // interrupt callback code goes here. Minimize processing in interrupt.
     time_counter++;
 }
+
+PIN_Config pinTable[] =
+{
+    Board_PIN_LED2 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+	PIN_TERMINATE
+};
 
 void rf_send(uint8_t* data, size_t length) {
     RF_cmdPropTx.pktLen = length;
@@ -124,14 +133,15 @@ void rf_send(uint8_t* data, size_t length) {
     }
 }
 
-static void rf_send_button_pressed_message() {
-    const size_t length = 8;
+static void rf_send_magazine_message(uint8_t id) {
+    const size_t length = 10;
     uint8_t buffer[length];
-    uint8_t id = 2;
 
     memcpy(&buffer[0], &my_id, 2);
     memcpy(&buffer[2], &time_counter, 4);
     memcpy(&buffer[6], &id, 1); // 321 = button pressed packet
+    memcpy(&buffer[7], &magazine_left, 1);
+    memcpy(&buffer[8], &MAGAZINE_SIZE, 1);
 
     for (int i = 0; i < length - 1; i++) {
         if (buffer[i] == 255) {
@@ -141,6 +151,18 @@ static void rf_send_button_pressed_message() {
 
     buffer[length - 1] = 255;
     rf_send(buffer, length);
+}
+
+static void rf_send_button_pressed_message() {
+    uint8_t id = 2;
+
+    rf_send_magazine_message(id);
+}
+
+static void rf_send_reloaded_message() {
+    uint8_t id = 3;
+
+    rf_send_magazine_message(id);
 }
 
 static void rf_send_brightness_message(uint16_t brightness) {
@@ -164,6 +186,10 @@ static void rf_send_brightness_message(uint16_t brightness) {
 }
 
 static void btn_callback(uint_least8_t index) {
+    if (is_button_cooldown) {
+        return; // return when button pressed too soon
+    }
+
     if (my_id == 0) {
         my_id = time_counter % UINT16_MAX;
     }
@@ -178,6 +204,9 @@ void *main_thread(void *arg0)
     GPIO_setConfig(Board_GPIO_BUTTON0, GPIO_CFG_IN_INT_FALLING | GPIO_CFG_IN_PU);
     GPIO_setCallback(Board_GPIO_BUTTON0, &btn_callback);
     GPIO_enableInt(Board_GPIO_BUTTON0);
+
+    GPIO_setConfig(Board_GPIO_LED0, GPIO_CFG_OUT_STD | GPIO_CFG_OUT_LOW);
+    GPIO_write(Board_GPIO_LED0, Board_GPIO_LED_ON);
 
     {
         GPTimerCC26XX_Params params;
@@ -232,9 +261,19 @@ void *main_thread(void *arg0)
     }
 
     uint16_t last_raw_lux = 0;
+    float latestGyroValue[3];
+    float latestAccValue[3];
+    int last_button_trigger = 0;
+    int last_button_blinky = 0;
+    bool is_init = false;
     while (1)
     {
         if (my_id == 0) continue;
+
+        if (!is_init) {
+            GPIO_write(Board_GPIO_LED0, Board_GPIO_LED_OFF);
+            is_init = true;
+        }
 
         uint16_t raw_lux;
 
@@ -248,9 +287,47 @@ void *main_thread(void *arg0)
             rf_send_brightness_message(raw_lux);
             last_raw_lux = raw_lux;
         }
-        if (button_pressed) {
-            rf_send_button_pressed_message();
+        
+        if (time_counter - last_button_trigger > ONE_SECOND_COUNTER_VALUE) {
+            is_button_cooldown = false; // mark button cooldown as over
+        }
+
+        if (magazine_left > 0) { // trigger cooldown LED on/off
+            if (is_button_cooldown) {
+                GPIO_write(Board_GPIO_LED0, Board_GPIO_LED_ON);
+            } else {
+                GPIO_write(Board_GPIO_LED0, Board_GPIO_LED_OFF);
+            }
+        }
+
+        if (button_pressed && magazine_left > 0) { // valid shot taken
+            is_button_cooldown = true;
+            last_button_trigger = time_counter;
             button_pressed = false;
+
+            magazine_left--;
+            rf_send_button_pressed_message();
+        }
+
+        if (magazine_left == 0) {
+            if (time_counter - last_button_blinky > ONE_SECOND_COUNTER_VALUE / 4) { // blinky LED
+                last_button_blinky = time_counter;
+                GPIO_toggle(Board_GPIO_LED0);
+            }
+
+            uint16_t tmp[3];
+            if (SensorMpu9250_accRead(tmp)) {
+                latestAccValue[0] = SensorMpu9250_accConvert(tmp[0]);
+                latestAccValue[1] = SensorMpu9250_accConvert(tmp[1]);
+                latestAccValue[2] = SensorMpu9250_accConvert(tmp[2]);
+
+                if (latestAccValue[0] > G_RELOAD_WHIP_THRESHOLD 
+                    || latestAccValue[1] > G_RELOAD_WHIP_THRESHOLD
+                    || latestAccValue[2] > G_RELOAD_WHIP_THRESHOLD) { // reload succesful
+                        magazine_left = MAGAZINE_SIZE;
+                        rf_send_reloaded_message();
+                    }
+            }
         }
 
         /*
@@ -262,12 +339,6 @@ void *main_thread(void *arg0)
             latestGyroValue[0] = SensorMpu9250_gyroConvert(tmp[0]);
             latestGyroValue[1] = SensorMpu9250_gyroConvert(tmp[1]);
             latestGyroValue[2] = SensorMpu9250_gyroConvert(tmp[2]);
-        }
-
-        if (SensorMpu9250_accRead(tmp)) {
-            latestAccValue[0] = SensorMpu9250_accConvert(tmp[0]);
-            latestAccValue[1] = SensorMpu9250_accConvert(tmp[1]);
-            latestAccValue[2] = SensorMpu9250_accConvert(tmp[2]);
         }
 
         uint8_t rawPres;
