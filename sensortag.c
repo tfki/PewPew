@@ -55,13 +55,19 @@ static RF_Object rfObject;
 static RF_Handle rfHandle;
 static int time_counter = 0;
 static bool button_pressed = false;
-static bool in_button_cooldown = false;
+static bool is_button_cooldown = false;
 
 GPTimerCC26XX_Handle hTimer;
 void timerCallback(GPTimerCC26XX_Handle handle, GPTimerCC26XX_IntMask interruptMask) {
     // interrupt callback code goes here. Minimize processing in interrupt.
     time_counter++;
 }
+
+PIN_Config pinTable[] =
+{
+    Board_PIN_LED2 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+	PIN_TERMINATE
+};
 
 void rf_send(uint8_t* data, size_t length) {
     RF_cmdPropTx.pktLen = length;
@@ -179,7 +185,7 @@ static void rf_send_brightness_message(uint16_t brightness) {
 }
 
 static void btn_callback(uint_least8_t index) {
-    if (in_button_cooldown) {
+    if (is_button_cooldown) {
         return; // return when button pressed too soon
     }
 
@@ -198,7 +204,8 @@ void *main_thread(void *arg0)
     GPIO_setCallback(Board_GPIO_BUTTON0, &btn_callback);
     GPIO_enableInt(Board_GPIO_BUTTON0);
 
-    // TODO set LED ON
+    GPIO_setConfig(Board_GPIO_LED0, GPIO_CFG_OUT_STD | GPIO_CFG_OUT_LOW);
+    GPIO_write(Board_GPIO_LED0, Board_GPIO_LED_ON);
 
     {
         GPTimerCC26XX_Params params;
@@ -254,13 +261,14 @@ void *main_thread(void *arg0)
 
     uint16_t last_raw_lux = 0;
     int last_button_trigger = 0;
+    int last_button_blinky = 0;
     bool is_init = false;
     while (1)
     {
         if (my_id == 0) continue;
 
         if (!is_init) {
-            // TODO set LED OFF
+            GPIO_write(Board_GPIO_LED0, Board_GPIO_LED_OFF);
             is_init = true;
         }
 
@@ -278,19 +286,19 @@ void *main_thread(void *arg0)
         }
         
         if (time_counter - last_button_trigger > ONE_SECOND_COUNTER_VALUE) {
-            in_button_cooldown = false; // mark button cooldown as over
+            is_button_cooldown = false; // mark button cooldown as over
         }
 
         if (magazine_left > 0) { // trigger cooldown LED on/off
-            if (in_button_cooldown) {
-                // TODO LED ON
+            if (is_button_cooldown) {
+                GPIO_write(Board_GPIO_LED0, Board_GPIO_LED_ON);
             } else {
-                // TODO LED OFF
+                GPIO_write(Board_GPIO_LED0, Board_GPIO_LED_OFF);
             }
         }
 
         if (button_pressed && magazine_left > 0) { // valid shot taken
-            in_button_cooldown = true;
+            is_button_cooldown = true;
             last_button_trigger = time_counter;
             button_pressed = false;
 
@@ -299,9 +307,13 @@ void *main_thread(void *arg0)
         }
 
         if (magazine_left == 0) {
-            // TODO BLINK LED
+            if (time_counter - last_button_blinky > ONE_SECOND_COUNTER_VALUE / 4) { // blinky LED
+                last_button_blinky = time_counter;
+                GPIO_toggle(Board_GPIO_LED0);
+            }
 
             // TODO CHECK GYRO
+            // sendreloaded..()
         }
 
         /*
