@@ -12,8 +12,6 @@ enum State {
     WaitingForFrames(u32),
 }
 
-// black monitor => 0-5 lux
-// white monitor => 1500-2500 lux
 const BRIGHTNESS_THRESHOLD: u16 = 20000;
 
 pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
@@ -27,13 +25,11 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
         fn store_brightness_in_buffer(buf: &mut VecDeque<(u16, u32, bool)>, sensortag_id: u16, time: u32, val:u16) {
             if buf.len() == buf.capacity() {
             buf.pop_back();
+            } else if val >= BRIGHTNESS_THRESHOLD {
+                // WHITE
+                buf.push_front((sensortag_id, time, true));
             } else {
-                if val >= BRIGHTNESS_THRESHOLD {
-                    // WHITE
-                    buf.push_front((sensortag_id, time, true));
-                } else {
-                    buf.push_front((sensortag_id, time, false));
-                }
+                buf.push_front((sensortag_id, time, false));
             }
         }
 
