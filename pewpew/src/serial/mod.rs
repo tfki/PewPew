@@ -48,8 +48,8 @@ pub fn run(comm: SerialComm, cancel_token: CancelToken) -> impl FnOnce() {
                                 .send_to_gui(SerialToGui {
                                     sensortag_id: packet.sensortag_id,
                                     timestamp: packet.timestamp,
-                                    ammo: ammo,
-                                    ammo_max: ammo_max,
+                                    ammo,
+                                    ammo_max,
                                     kind: SerialToGuiKind::Shot,
                                 })
                                 .is_err()
@@ -80,8 +80,8 @@ pub fn run(comm: SerialComm, cancel_token: CancelToken) -> impl FnOnce() {
                                 .send_to_gui(SerialToGui {
                                     sensortag_id: packet.sensortag_id,
                                     timestamp: packet.timestamp,
-                                    ammo: ammo,
-                                    ammo_max: ammo_max,
+                                    ammo,
+                                    ammo_max,
                                     kind: SerialToGuiKind::Reload,
                                 })
                                 .is_err()

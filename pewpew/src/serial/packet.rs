@@ -58,9 +58,9 @@ impl TryFrom<&[u8]> for Packet {
                 if value.len() != 10 {
                     Err(MessageParseError::InvalidPacketLength)
                 } else {
-                    let ammo = u8::from_le(value[7].try_into().unwrap());
-                    let ammo_max = u8::from_le(value[8].try_into().unwrap());
-                    let mag_status = MagazineStatus{ammo: ammo, ammo_max: ammo_max};
+                    let ammo = u8::from_le(value[7]);
+                    let ammo_max = u8::from_le(value[8]);
+                    let mag_status = MagazineStatus{ammo, ammo_max};
 
                     Ok(Packet {
                         sensortag_id: tag_id,
@@ -73,9 +73,9 @@ impl TryFrom<&[u8]> for Packet {
                 if value.len() != 10 {
                     Err(MessageParseError::InvalidPacketLength)
                 } else {
-                    let ammo = u8::from_le(value[7].try_into().unwrap());
-                    let ammo_max = u8::from_le(value[8].try_into().unwrap());
-                    let mag_status = MagazineStatus{ammo: ammo, ammo_max: ammo_max};
+                    let ammo = u8::from_le(value[7]);
+                    let ammo_max = u8::from_le(value[8]);
+                    let mag_status = MagazineStatus{ammo, ammo_max};
 
                     Ok(Packet {
                         sensortag_id: tag_id,
