@@ -41,12 +41,13 @@
 #include "smartrf_settings/smartrf_settings.h"
 
 
-static uint16_t latestAdcValue;
+static const uint8_t MAGAZINE_SIZE = 8;
+static uint8_t magazine_left = MAGAZINE_SIZE;
+static const int ONE_SECOND_COUNTER_VALUE = 444; 
+
+
 static float latestGyroValue[3];
 static float latestAccValue[3];
-static float latestTemp;
-static float latestHum;
-static uint32_t latestPress;
 
 static uint16_t my_id = 0;
 
@@ -54,6 +55,7 @@ static RF_Object rfObject;
 static RF_Handle rfHandle;
 static int time_counter = 0;
 static bool button_pressed = false;
+static bool in_button_cooldown = false;
 
 GPTimerCC26XX_Handle hTimer;
 void timerCallback(GPTimerCC26XX_Handle handle, GPTimerCC26XX_IntMask interruptMask) {
@@ -125,13 +127,26 @@ void rf_send(uint8_t* data, size_t length) {
 }
 
 static void rf_send_button_pressed_message() {
-    const size_t length = 8;
-    uint8_t buffer[length];
     uint8_t id = 2;
+
+    rf_send_magazine_message(id);
+}
+
+static void rf_send_reloaded_message() {
+    uint8_t id = 3;
+
+    rf_send_magazine_message(id);
+}
+
+static void rf_send_magazine_message(uint8_t id) {
+    const size_t length = 10;
+    uint8_t buffer[length];
 
     memcpy(&buffer[0], &my_id, 2);
     memcpy(&buffer[2], &time_counter, 4);
     memcpy(&buffer[6], &id, 1); // 321 = button pressed packet
+    memcpy(&buffer[7], &magazine_left, 1);
+    memcpy(&buffer[8], &MAGAZINE_SIZE, 1);
 
     for (int i = 0; i < length - 1; i++) {
         if (buffer[i] == 255) {
@@ -164,6 +179,10 @@ static void rf_send_brightness_message(uint16_t brightness) {
 }
 
 static void btn_callback(uint_least8_t index) {
+    if (in_button_cooldown) {
+        return; // return when button pressed too soon
+    }
+
     if (my_id == 0) {
         my_id = time_counter % UINT16_MAX;
     }
@@ -178,6 +197,8 @@ void *main_thread(void *arg0)
     GPIO_setConfig(Board_GPIO_BUTTON0, GPIO_CFG_IN_INT_FALLING | GPIO_CFG_IN_PU);
     GPIO_setCallback(Board_GPIO_BUTTON0, &btn_callback);
     GPIO_enableInt(Board_GPIO_BUTTON0);
+
+    // TODO set LED ON
 
     {
         GPTimerCC26XX_Params params;
@@ -232,9 +253,16 @@ void *main_thread(void *arg0)
     }
 
     uint16_t last_raw_lux = 0;
+    int last_button_trigger = 0;
+    bool is_init = false;
     while (1)
     {
         if (my_id == 0) continue;
+
+        if (!is_init) {
+            // TODO set LED OFF
+            is_init = true;
+        }
 
         uint16_t raw_lux;
 
@@ -248,9 +276,32 @@ void *main_thread(void *arg0)
             rf_send_brightness_message(raw_lux);
             last_raw_lux = raw_lux;
         }
-        if (button_pressed) {
-            rf_send_button_pressed_message();
+        
+        if (time_counter - last_button_trigger > ONE_SECOND_COUNTER_VALUE) {
+            in_button_cooldown = false; // mark button cooldown as over
+        }
+
+        if (magazine_left > 0) { // trigger cooldown LED on/off
+            if (in_button_cooldown) {
+                // TODO LED ON
+            } else {
+                // TODO LED OFF
+            }
+        }
+
+        if (button_pressed && magazine_left > 0) { // valid shot taken
+            in_button_cooldown = true;
+            last_button_trigger = time_counter;
             button_pressed = false;
+
+            magazine_left--;
+            rf_send_button_pressed_message();
+        }
+
+        if (magazine_left == 0) {
+            // TODO BLINK LED
+
+            // TODO CHECK GYRO
         }
 
         /*
