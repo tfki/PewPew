@@ -1,6 +1,5 @@
 use crate::comm::message::{GuiToHitreg, HitregToGui, SerialToHitReg, ToHitreg};
 use std::sync::mpsc::{Receiver, RecvError, SendError, Sender, TryRecvError};
-use std::time::Duration;
 
 pub struct HitregComm {
     hitreg_to_gui_tx: Sender<HitregToGui>,
@@ -54,25 +53,17 @@ impl HitregComm {
         self.which = !self.which;
         if self.which {
             loop {
-                if let Ok(message) = self
-                    .serial_to_hitreg_rx
-                    .recv_timeout(Duration::from_millis(1))
-                {
+                if let Ok(message) = self.serial_to_hitreg_rx.try_recv() {
                     return Ok(ToHitreg::FromSerial(message));
-                } else if let Ok(message) =
-                    self.gui_to_hitreg_rx.recv_timeout(Duration::from_millis(1))
-                {
+                } else if let Ok(message) = self.gui_to_hitreg_rx.try_recv() {
                     return Ok(ToHitreg::FromGui(message));
                 }
             }
         } else {
             loop {
-                if let Ok(message) = self.gui_to_hitreg_rx.recv_timeout(Duration::from_millis(1)) {
+                if let Ok(message) = self.gui_to_hitreg_rx.try_recv() {
                     return Ok(ToHitreg::FromGui(message));
-                } else if let Ok(message) = self
-                    .serial_to_hitreg_rx
-                    .recv_timeout(Duration::from_millis(1))
-                {
+                } else if let Ok(message) = self.serial_to_hitreg_rx.try_recv() {
                     return Ok(ToHitreg::FromSerial(message));
                 }
             }

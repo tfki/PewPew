@@ -1,6 +1,6 @@
+use crate::comm::message::SerialToGuiKind;
 use crate::gui::engine::components::movement::Movement;
 use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
-use crate::gui::engine::components::texture::Texture;
 use crate::gui::engine::components::{hitbox, text::Text, texture, timer, Point};
 use crate::gui::engine::event::Event;
 use crate::gui::engine::gui_context::GuiContext;
@@ -81,18 +81,12 @@ pub fn run(gui_context: &mut GuiContext) {
                     ))
                     .build();
 
-                let movement = Movement::new(move |t| Point {
-                    x: t as i32 / 33 * (x + y),
-                    y: 0,
-                });
-
                 let event = Event::default();
                 let entity = world.spawn((
                     texture,
                     hitbox::Builder::new(position, 200, 200)
                         .on_hit(event.clone())
                         .build(),
-                    movement,
                 ));
 
                 chickens_with_events.push((entity, event));
@@ -105,25 +99,15 @@ pub fn run(gui_context: &mut GuiContext) {
         gui_context.canvas().clear();
         gui_context.canvas().present();
 
+        let mut shoot_event = Event::default();
         {
-            for frame in 0..500 {
-                for (entity, event) in &mut chickens_with_events {
-                    if event.consume() {
-                        let death_texture = {
-                            let texture = world.get::<&Texture>(*entity).unwrap();
-
-                            texture::Builder::new(2, texture.position)
-                                .with_num_frames(8)
-                                .with_frame_advance_interval(Duration::from_millis(110))
-                                .build()
-                        };
-                        let movement = Movement::new(move |t| Point {
-                            x: 0,
-                            y: (t as f32 / 64.0).powi(2) as i32,
-                        });
-
-                        world.spawn((death_texture, movement));
-                        world.despawn(*entity).unwrap();
+            for _ in 0.. {
+                if let Ok(message) = gui_context.comm().try_recv_from_serial() {
+                    match message.kind {
+                        SerialToGuiKind::Reload => {}
+                        SerialToGuiKind::Shot => {
+                            shoot_event.trigger();
+                        }
                     }
                 }
 
@@ -132,7 +116,7 @@ pub fn run(gui_context: &mut GuiContext) {
                 gui_context.canvas().set_draw_color(Color::BLACK);
                 gui_context.canvas().clear();
 
-                if frame % 100 == 10 {
+                if shoot_event.consume_all() > 0 {
                     // then, show flashing sequence
                     // this takes how many ever frames it needs O(ceil(log2(|hitboxes|)))
                     systems::flashing_sequence::run(gui_context, &mut world, true, &mut game_time);
