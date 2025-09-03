@@ -43,7 +43,7 @@ pub fn run(comm: SerialComm, cancel_token: CancelToken) -> impl FnOnce() {
             match packet {
                 Ok(packet) => {
                     match packet.content {
-                        PacketContent::ButtonPressed(MagazineStatus{ammo, ammo_max}) => {
+                        PacketContent::ButtonPressed(MagazineStatus { ammo, ammo_max }) => {
                             if comm
                                 .send_to_gui(SerialToGui {
                                     sensortag_id: packet.sensortag_id,
@@ -75,7 +75,7 @@ pub fn run(comm: SerialComm, cancel_token: CancelToken) -> impl FnOnce() {
                                 return;
                             }
                         }
-                        PacketContent::Reloaded(MagazineStatus{ammo, ammo_max}) => {
+                        PacketContent::Reloaded(MagazineStatus { ammo, ammo_max }) => {
                             if comm
                                 .send_to_gui(SerialToGui {
                                     sensortag_id: packet.sensortag_id,

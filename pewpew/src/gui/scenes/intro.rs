@@ -62,7 +62,7 @@ pub fn run(gui_context: &mut GuiContext) {
 
         {
             loop {
-                if intro_done_event.consume() {
+                if intro_done_event.consume_all() > 0 {
                     break;
                 }
 

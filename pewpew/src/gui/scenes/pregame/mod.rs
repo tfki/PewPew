@@ -1,5 +1,5 @@
+use crate::comm::message::SerialToGuiKind;
 use crate::gui::engine::components::action::Action;
-use crate::gui::engine::components::condition::Condition;
 use crate::gui::engine::components::movement::Movement;
 use crate::gui::engine::components::point_with_alignment::{HAlign, PointWithAlignment, VAlign};
 use crate::gui::engine::components::{text, texture, Point};
@@ -8,52 +8,23 @@ use crate::gui::engine::gui_context::GuiContext;
 use crate::gui::engine::resources::Resources;
 use crate::gui::engine::stopwatch::Stopwatch;
 use crate::gui::engine::systems;
-use crate::gui::scenes::common::magazine::Magazine;
+use crate::gui::scenes::common::magazine::SpawnMagazineAction;
 use crate::gui::scenes::common::scenery::Scenery;
 use crate::gui::scenes::load_all_textures;
+use crate::serial::packet::MagazineStatus;
 use hecs::World;
 use log::trace;
 use rand::Rng;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::BlendMode;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
 
 mod custom_components;
 mod custom_systems;
-
-pub trait SpawnMagazineAction {
-    fn spawn_magazine_when(
-        shoot_event: Event,
-        position: PointWithAlignment,
-        num_shells: usize,
-        scale: f32,
-        ammo_virgin_texture_id: usize,
-        ammo_used_texture_id: usize,
-    ) -> Action {
-        let mut shoot_event_clone = shoot_event.clone();
-        Action::new(
-            move |_, world| {
-                let (magazine, _) = Magazine::new_w_event(
-                    position,
-                    num_shells,
-                    scale,
-                    ammo_virgin_texture_id,
-                    ammo_used_texture_id,
-                    shoot_event_clone.clone(),
-                );
-                world.spawn(magazine);
-
-                // trigger shot event again, so that the magazine gets a chance to draw itself
-                shoot_event_clone.trigger();
-            },
-            shoot_event,
-        )
-    }
-}
-
-impl SpawnMagazineAction for Action {}
 
 pub fn run(gui_context: &mut GuiContext) {
     let viewport = {
@@ -72,89 +43,310 @@ pub fn run(gui_context: &mut GuiContext) {
         let mut world = World::new();
         let mut game_time = Stopwatch::new_paused();
 
+        let scenery_scale = viewport.height() as f32 / 720.0;
         world.spawn(Scenery::new(
-            PointWithAlignment::new_top_left(Point { x: 0, y: 0 }),
-            2.0,
+            PointWithAlignment::new_center(Point {
+                x: (viewport.width() / 2) as i32,
+                y: (viewport.height() / 2) as i32,
+            }),
+            scenery_scale,
             &mut resources,
             &texture_creator,
         ));
 
-        let p3_shot = Event::default();
+        // spawn chickens
         {
-            // on p3_shot trigger
-            let position = PointWithAlignment {
-                point: Point {
-                    x: 0,
-                    y: viewport.height() as i32,
-                },
-                v_align: VAlign::Bottom,
-                h_align: HAlign::Left,
-            };
+            // randomly spawns chickens on the edge of the viewport
+            // every chicken has an event attached to it that
+            // 1. despawns it
+            // 2. spawns another random chicken
+            // once it has left the viewport
+            let mut spawn_new_chicken_event = Event::default();
+            world.spawn((Action::spawn_random_chicken_when(
+                spawn_new_chicken_event.clone(),
+                viewport,
+                spawn_new_chicken_event.clone(),
+            ),));
 
-            // despawn "p1 missing" text
-            world.spawn((
-                text::Builder::new("Player 3 missing".to_string(), position)
-                    .with_color(Color::RED)
+            for _ in 0..250 {
+                spawn_new_chicken_event.trigger();
+            }
+        }
+
+        let mut shoot_events = Vec::new();
+        let mut reload_events = Vec::new();
+        let mut magazine_statuses = Vec::new();
+        let player_names = ["Player 1", "Player 2", "Player 3", "Player 4"];
+        let player_colors = [Color::RED, Color::GREEN, Color::BLUE, Color::YELLOW];
+
+        let all_players_joined_event = Event::default();
+        let some_player_joined_event = Event::default();
+        let countdown_tick_event = Event::default();
+        let start_countdown_event = Event::default();
+        let mut countdown_finished_event = Event::default();
+
+        let num_players = Arc::new(Mutex::new(0));
+        let countdown_seconds_left = Arc::new(Mutex::new(COUNTDOWN_START_VALUE as i32));
+
+        const COUNTDOWN_START_VALUE: u8 = 60;
+        let ammo_width = resources.images[texture_id_map["ammo.png"]].query().width;
+        let magazine_scale = 0.15 * viewport.height() as f32 / ammo_width as f32;
+
+        // spawn players
+        {
+            for i in 0..4 {
+                let shoot_event = Event::default();
+                let reload_event = Event::default();
+                let magazine_status = Arc::new(Mutex::new(MagazineStatus {
+                    ammo: 0,
+                    ammo_max: 0,
+                }));
+                let position = match i {
+                    0 => PointWithAlignment {
+                        point: Point { x: 0, y: 0 },
+                        v_align: VAlign::Top,
+                        h_align: HAlign::Left,
+                    },
+                    1 => PointWithAlignment {
+                        point: Point {
+                            x: viewport.width() as i32,
+                            y: 0,
+                        },
+                        v_align: VAlign::Top,
+                        h_align: HAlign::Right,
+                    },
+                    2 => PointWithAlignment {
+                        point: Point {
+                            x: 0,
+                            y: viewport.height() as i32,
+                        },
+                        v_align: VAlign::Bottom,
+                        h_align: HAlign::Left,
+                    },
+                    3 => PointWithAlignment {
+                        point: Point {
+                            x: viewport.width() as i32,
+                            y: viewport.height() as i32,
+                        },
+                        v_align: VAlign::Bottom,
+                        h_align: HAlign::Right,
+                    },
+                    _ => unreachable!(),
+                };
+
+                // create and despawn "player x missing" text
+                world.spawn((
+                    text::Builder::new(
+                        format!("{} missing", player_names[i]).to_string(),
+                        position,
+                    )
+                    .with_color(player_colors[i])
                     .build(),
-                Action::despawn_self_when(p3_shot.clone()),
-            ));
+                    Action::despawn_self_when(shoot_event.clone()),
+                ));
 
-            // spawn magazine
-            // and despawn spawner, so that spawn magazine action only runs once
+                // spawn magazine
+                // and despawn spawner, so that spawn magazine action only runs once
+                world.spawn((vec![
+                    Action::spawn_magazine_when(
+                        shoot_event.clone(),
+                        reload_event.clone(),
+                        magazine_status.clone(),
+                        position,
+                        magazine_scale,
+                        texture_id_map["ammo.png"],
+                        texture_id_map["ammo.png"],
+                    ),
+                    Action::despawn_self_when(shoot_event.clone()),
+                ],));
+
+                shoot_events.push(shoot_event.clone());
+                reload_events.push(reload_event.clone());
+                magazine_statuses.push(magazine_status.clone());
+                // world.spawn((shoot_event
+                //     .trigger_every(Duration::from_millis(rand::rng().random_range(3000..10000))),));
+            }
+        }
+
+        world.spawn((
+            text::Builder::new(
+                "Shoot to join game!".to_string(),
+                PointWithAlignment::new_center(Point {
+                    x: viewport.width() as i32 / 2,
+                    y: viewport.height() as i32 / 2,
+                }),
+            )
+            .build(),
+            Action::despawn_self_when(all_players_joined_event.clone()),
+        ));
+
+        for shoot_event in &mut shoot_events {
+            let num_players_clone = num_players.clone();
+            let all_players_joined_event_clone = all_players_joined_event.clone();
             world.spawn((vec![
-                Action::spawn_magazine_when(
-                    p3_shot.clone(),
-                    position,
-                    8,
-                    2.0,
-                    texture_id_map["ammo.png"],
-                    texture_id_map["ammo.png"],
-                ),
-                Action::despawn_self_when(p3_shot.clone()),
+                Action::trigger_other_event_when(
+                    shoot_event.clone(),
+                    some_player_joined_event.clone(),
+                )
+                .oneshot(),
+                Action::despawn_self_when(shoot_event.clone()),
+                Action::when_oneshot(shoot_event.clone(), move |_, _| {
+                    let mut lock = num_players_clone.lock().unwrap();
+                    *lock += 1;
+                    if *lock == 4 {
+                        all_players_joined_event_clone.clone().trigger();
+                    }
+                }),
             ],));
         }
 
-        world.spawn((p3_shot.trigger_every(Duration::from_secs(3)),));
+        // manages countdown text
+        {
+            let start_game_countdown_tick_event = countdown_tick_event.clone();
+            let countdown_seconds_left = countdown_seconds_left.clone();
+            let mut countdown_finished_event = countdown_finished_event.clone();
 
-        world.spawn((text::Builder::new(
-            "Shoot to join game!".to_string(),
-            PointWithAlignment::new_center(Point {
-                x: viewport.width() as i32 / 2,
-                y: viewport.height() as i32 / 2,
+            // when countdown_tick_event is triggered
+            // add text with countdown_seconds_left that disappears on the next tick of
+            // countdown_tick_event and decrement countdown_seconds_left
+            world.spawn((vec![Action::when(
+                countdown_tick_event.clone(),
+                move |_, world| {
+                    world.spawn((
+                        text::Builder::new(
+                            format!(
+                                "Game starts in {}..",
+                                countdown_seconds_left.lock().unwrap()
+                            )
+                            .to_string(),
+                            PointWithAlignment {
+                                point: Point {
+                                    x: (viewport.width() / 2) as i32,
+                                    y: (2 * viewport.height() / 3) as i32,
+                                },
+                                v_align: VAlign::Center,
+                                h_align: HAlign::Center,
+                            },
+                        )
+                        .with_color(Color::WHITE)
+                        .build(),
+                        Action::despawn_self_when(start_game_countdown_tick_event.clone()),
+                    ));
+
+                    let mut locked = countdown_seconds_left.lock().unwrap();
+                    *locked -= 1;
+                    if *locked == -1 {
+                        countdown_finished_event.trigger();
+                    }
+                },
+            )],));
+        }
+
+        // start_countdown_event trigger starts timer on countdown_tick_event
+        // another start_countdown_event trigger restarts the timer
+        {
+            // when start_countdown_event is triggered,
+            // install a timer that triggers countdown_tick_event every second
+            // and that despawns itself when start_countdown_event is triggered once more
+            let mut countdown_tick_event = countdown_tick_event.clone();
+            let start_countdown_event = start_countdown_event.clone();
+            world.spawn((vec![Action::when(
+                start_countdown_event.clone(),
+                move |_, world| {
+                    world.spawn((
+                        countdown_tick_event
+                            .clone()
+                            .trigger_every(Duration::from_secs(1)),
+                        Action::despawn_self_when(start_countdown_event.clone()),
+                    ));
+                    countdown_tick_event.trigger();
+                },
+            )],));
+        }
+
+        // reset countdown to initial value when a player joins
+        {
+            let countdown_value_clone = countdown_seconds_left.clone();
+            world.spawn((Action::when(
+                some_player_joined_event.clone(),
+                move |_, _| {
+                    *countdown_value_clone.lock().unwrap() = COUNTDOWN_START_VALUE as i32;
+                },
+            ),));
+        }
+
+        // start countdown when a player joins (oneshot)
+        // and install same action again
+        // this must be oneshot to prevent the edge case where multiple players join within the same frame
+        // and the countdown start event is then fired multiple times
+        // that is not possible in this constellation
+        world.spawn((vec![
+            Action::trigger_other_event_when(
+                some_player_joined_event.clone(),
+                start_countdown_event.clone(),
+            )
+            .oneshot(),
+            Action::despawn_self_when(some_player_joined_event.clone()),
+            Action::when(some_player_joined_event.clone(), move |_entity, world| {
+                world.spawn((vec![
+                    Action::trigger_other_event_when(
+                        some_player_joined_event.clone(),
+                        start_countdown_event.clone(),
+                    )
+                    .oneshot(),
+                    Action::despawn_self_when(some_player_joined_event.clone()),
+                ],));
             }),
-        )
-        .build(),));
-
-        // randomly spawns chickens on the edge of the viewport
-        // every chicken has an event attached to it that
-        // 1. despawns it
-        // 2. spawns another random chicken
-        // once it has left the viewport
-        spawn_random_chickens(viewport, 250, &mut world);
-
-        let condition = Condition::new(|_| true, Event::default());
-        world.spawn((condition,));
+        ],));
 
         game_time.resume();
 
-        for _ in 0..200 {
+        let mut sensortag_to_player_id = HashMap::new();
+        for _ in 0.. {
+            if countdown_finished_event.consume_all() > 0 {
+                return;
+            }
+
+            if let Ok(message) = gui_context.comm().try_recv_from_serial() {
+                let len = sensortag_to_player_id.len();
+                let player_id = sensortag_to_player_id
+                    .entry(message.sensortag_id)
+                    .or_insert(len);
+
+                match message.kind {
+                    SerialToGuiKind::Reload => {
+                        *magazine_statuses[*player_id].lock().unwrap() = MagazineStatus {
+                            ammo: message.ammo,
+                            ammo_max: message.ammo_max,
+                        };
+                        reload_events[*player_id].trigger();
+                    }
+                    SerialToGuiKind::Shot => {
+                        *magazine_statuses[*player_id].lock().unwrap() = MagazineStatus {
+                            ammo: message.ammo,
+                            ammo_max: message.ammo_max,
+                        };
+                        shoot_events[*player_id].trigger();
+                    }
+                }
+            }
+
             let frame_start = SystemTime::now();
 
             gui_context.canvas().set_draw_color(Color::BLACK);
             gui_context.canvas().clear();
 
-            systems::work_conditions::run(&mut world);
             systems::work_actions::run(&mut world);
             systems::work_timers::run(&mut world, &mut game_time);
             systems::update_movements::run(&mut world, &mut game_time);
             systems::update_animated_textures::run(&mut world, &mut game_time);
             systems::draw_textures::run(gui_context.canvas(), &mut world, &mut resources);
 
-            // make everything drawn up to this point apper slightly darker
+            // make everything drawn up to this point appear slightly darker
             gui_context.canvas().set_blend_mode(BlendMode::Blend);
             gui_context
                 .canvas()
-                .set_draw_color(Color::RGBA(0, 0, 0, 175));
+                .set_draw_color(Color::RGBA(0, 0, 0, 150));
             gui_context.canvas().fill_rect(viewport).unwrap();
             gui_context.canvas().set_blend_mode(BlendMode::None);
 
@@ -178,22 +370,21 @@ pub fn run(gui_context: &mut GuiContext) {
     }
 }
 
-impl ReplaceOutOfViewportChickenAction for Action {}
-trait ReplaceOutOfViewportChickenAction {
-    fn replace_out_of_viewport_chicken_when(event: Event, viewport: Rect) -> Action {
-        Action::new(
-            move |entity_id, world| {
-                world.despawn(entity_id).unwrap();
-                spawn_random_chickens(viewport, 1, world);
-            },
-            event,
-        )
+impl SpawnChickenAction for Action {}
+trait SpawnChickenAction {
+    fn spawn_random_chicken_when(
+        event: Event,
+        viewport: Rect,
+        out_of_viewport_event: Event,
+    ) -> Action {
+        Action::when(event, move |_entity_id, world| {
+            spawn_random_chickens(viewport, 1, world, out_of_viewport_event.clone());
+        })
     }
 }
 
-fn spawn_random_chickens(viewport: Rect, n: u32, world: &mut World) {
+fn spawn_random_chickens(viewport: Rect, n: u32, world: &mut World, out_of_viewport_event: Event) {
     for _ in 0..n {
-        let out_of_viewport_event = Event::default();
         let rand_big_range = rand::rng().random_range(-5..=5);
         let rand_small_neg_range = rand::rng().random_range(-5..=-1);
         let rand_small_pos_range = rand::rng().random_range(1..=5);
@@ -265,11 +456,13 @@ fn spawn_random_chickens(viewport: Rect, n: u32, world: &mut World) {
             _ => unreachable!(),
         };
 
+        let my_out_of_viewport_event = Event::default();
+
         let mut texture_builder = texture::Builder::new(0, position)
             .with_scale(rand_scale)
             .with_num_frames(13)
             .with_frame_advance_interval(Duration::from_millis(rand::rng().random_range(50..150)))
-            .on_outside_viewport(out_of_viewport_event.clone());
+            .on_outside_viewport(my_out_of_viewport_event.clone());
 
         if (movement.f)(10000).x > 0 {
             texture_builder = texture_builder.with_vertical_flip();
@@ -279,7 +472,13 @@ fn spawn_random_chickens(viewport: Rect, n: u32, world: &mut World) {
         world.spawn((
             movement,
             texture,
-            Action::replace_out_of_viewport_chicken_when(out_of_viewport_event, viewport),
+            vec![
+                Action::despawn_self_when(my_out_of_viewport_event.clone()),
+                Action::trigger_other_event_when(
+                    my_out_of_viewport_event,
+                    out_of_viewport_event.clone(),
+                ),
+            ],
         ));
     }
 }

@@ -1,24 +1,22 @@
-use crate::gui::engine::components::point_with_alignment::{HAlign, PointWithAlignment, VAlign};
-use crate::gui::engine::components::{timer, Point};
+use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
+use crate::gui::engine::components::Point;
 use crate::gui::engine::gui_context::GuiContext;
 use crate::gui::engine::resources::Resources;
 use crate::gui::engine::stopwatch::Stopwatch;
 use crate::gui::engine::systems;
-use crate::gui::scenes::common::magazine::Magazine;
 use crate::gui::scenes::common::scenery::Scenery;
 use hecs::World;
 use sdl2::image::LoadTexture;
 use sdl2::pixels::Color;
-use sdl2::rect::Rect;
 use std::path::Path;
 use std::thread;
 use std::time::{Duration, SystemTime};
 
 pub fn run(gui_context: &mut GuiContext) {
-    let viewport = {
-        let (width, height) = gui_context.canvas().output_size().unwrap();
-        Rect::new(0, 0, width, height)
-    };
+    // let viewport = {
+    //     let (width, height) = gui_context.canvas().output_size().unwrap();
+    //     Rect::new(0, 0, width, height)
+    // };
     let texture_creator = gui_context.canvas().texture_creator();
     let ttf_context = sdl2::ttf::init().unwrap();
     {
@@ -43,24 +41,26 @@ pub fn run(gui_context: &mut GuiContext) {
 
         let mut game_time = Stopwatch::new_paused();
 
-        let (magazine, shoot_event) = Magazine::new(
-            PointWithAlignment {
-                point: Point {
-                    x: 0,
-                    y: viewport.height() as i32,
-                },
-                h_align: HAlign::Left,
-                v_align: VAlign::Bottom,
-            },
-            8,
-            2.0,
-            0,
-            1,
-        );
-        world.spawn(magazine);
-        world.spawn((timer::Builder::new(Duration::from_secs(1), shoot_event)
-            .looping()
-            .build(),));
+        // let magazine = Magazine::new(
+        //     Event::default(),
+        //     Event::default(),
+        //     Arc::new(Mutex::new(MagazineStatus{ ammo: 0, ammo_max: 0 })),
+        //     PointWithAlignment {
+        //         point: Point {
+        //             x: 0,
+        //             y: viewport.height() as i32,
+        //         },
+        //         h_align: HAlign::Left,
+        //         v_align: VAlign::Bottom,
+        //     },
+        //     2.0,
+        //     0,
+        //     1,
+        // );
+        // world.spawn(magazine);
+        // world.spawn((timer::Builder::new(Duration::from_secs(1), shoot_event)
+        //     .looping()
+        //     .build(),));
 
         game_time.resume();
 

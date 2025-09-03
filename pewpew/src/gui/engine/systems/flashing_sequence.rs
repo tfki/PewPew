@@ -1,12 +1,12 @@
 use crate::comm::message::{GuiToHitreg, HitregToGui};
+use crate::gui::engine::components::hitbox::Hitbox;
+use crate::gui::engine::stopwatch::Stopwatch;
 use crate::gui::gui_context::GuiContext;
 use hecs::World;
 use log::debug;
 use sdl2::pixels::Color;
 use std::thread;
-use std::time::{Duration, SystemTime};
-use crate::gui::engine::components::hitbox::Hitbox;
-use crate::gui::engine::stopwatch::Stopwatch;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 fn usize_to_vec_bool(value: usize, max_idx: u32) -> Vec<bool> {
     let mut result = Vec::new();
@@ -19,11 +19,16 @@ fn usize_to_vec_bool(value: usize, max_idx: u32) -> Vec<bool> {
     result
 }
 
-pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool, game_time: &mut Stopwatch) {
+pub fn run(
+    gui_context: &mut GuiContext,
+    world: &mut World,
+    show_frames: bool,
+    game_time: &mut Stopwatch,
+) {
     game_time.pause();
     debug!(target: "Gui Thread", "starting flashing sequence");
 
-    let time_per_frame = Duration::from_millis(200);
+    let time_per_frame = Duration::from_millis(220);
     let all_hitboxes = {
         // sort hitboxes here in an extra scope
         // this way, all_hitboxes does not need to be mutable
@@ -32,10 +37,7 @@ pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool, g
         tmp
     };
 
-
-    // ilog2 rounds down, but we need to round up, thus +1
-    // and, pattern 0..0 is forbidden, thus another +1 = +2
-    let num_frames = (all_hitboxes.len() + 2).ilog2();
+    let num_frames = ((all_hitboxes.len() + 1) as f32).log2().ceil() as u32;
 
     let sequences = all_hitboxes
         .iter()
@@ -54,6 +56,8 @@ pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool, g
             sequences,
         })
         .unwrap();
+
+    thread::sleep(time_per_frame);
 
     for frame in 0..num_frames {
         let frame_start = SystemTime::now();
@@ -81,14 +85,19 @@ pub fn run(gui_context: &mut GuiContext, world: &mut World, show_frames: bool, g
         }
 
         gui_context.canvas().present();
-        let now = SystemTime::now();
 
-        gui_context.comm().send(GuiToHitreg::Frame(now)).unwrap();
-
-        let last_frame_duration = now.duration_since(frame_start).unwrap();
+        let last_frame_duration = SystemTime::now().duration_since(frame_start).unwrap();
         let wait_duration = time_per_frame.saturating_sub(last_frame_duration);
 
         thread::sleep(wait_duration);
+
+        let now = SystemTime::now();
+        debug!(target: "Gui Thread", "flashing frame end at t={}", now.duration_since(UNIX_EPOCH).unwrap().as_millis());
+
+        gui_context
+            .comm()
+            .send(GuiToHitreg::FlashFrameEnd(now))
+            .unwrap();
     }
 
     gui_context.canvas().set_draw_color(Color::BLACK);

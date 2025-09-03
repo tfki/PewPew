@@ -1,5 +1,5 @@
-use hecs::World;
 use crate::gui::engine::components::action::Action;
+use hecs::World;
 
 pub fn run(world: &mut World) {
     // collect ALL actions first
@@ -11,9 +11,9 @@ pub fn run(world: &mut World) {
         .query::<&mut Action>()
         .iter()
         .filter_map(
-            |(entity, wrapped_action)| match wrapped_action.event.consume() {
-                true => Some((entity, wrapped_action.action.take().unwrap())),
-                false => None,
+            |(entity, wrapped_action)| match wrapped_action.event.consume_all() {
+                n if n > 0 => Some((entity, n, wrapped_action.action.take().unwrap())),
+                _ => None,
             },
         )
         .collect::<Vec<_>>();
@@ -23,20 +23,24 @@ pub fn run(world: &mut World) {
         .query::<&mut Vec<Action>>()
         .iter()
         .flat_map(|(entity, vec)| {
-            vec.iter_mut().enumerate().filter_map(
-                move |(idx, wrapped_action)| match wrapped_action.event.consume() {
-                    true => Some((entity, idx, wrapped_action.action.take().unwrap())),
-                    false => None,
-                },
-            )
+            vec.iter_mut()
+                .enumerate()
+                .filter_map(
+                    move |(idx, wrapped_action)| match wrapped_action.event.consume_all() {
+                        n if n > 0 => Some((entity, idx, n, wrapped_action.action.take().unwrap())),
+                        _ => None,
+                    },
+                )
         })
         .collect::<Vec<_>>();
 
     // handle all entities with a single action
-    for (entity_id, action) in entities_with_action {
+    for (entity_id, n, action) in entities_with_action {
         {
             let mut locked_action = action.lock().unwrap();
-            locked_action(entity_id, world);
+            for _ in 0..n {
+                locked_action(entity_id, world);
+            }
         }
 
         // use if let, in case the action despawned the entity
@@ -46,10 +50,12 @@ pub fn run(world: &mut World) {
     }
 
     // handle all entities with a vector of actions
-    for (entity_id, idx, action) in entities_with_action_vec {
+    for (entity_id, idx, n, action) in entities_with_action_vec {
         {
             let mut locked_action = action.lock().unwrap();
-            locked_action(entity_id, world);
+            for _ in 0..n {
+                locked_action(entity_id, world);
+            }
         }
 
         // use if let, in case the action despawned the entity

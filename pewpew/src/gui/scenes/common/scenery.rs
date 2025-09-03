@@ -58,6 +58,7 @@ impl Scenery {
         // spawn
         let mut textures = Vec::new();
         {
+            position.point.y -= (150.0 * scale) as i32;
             textures.push(
                 texture::Builder::new(texture_index, position)
                     .with_z_index(-10)
@@ -65,7 +66,7 @@ impl Scenery {
                     .build(),
             );
 
-            position.point.y += 250;
+            position.point.y += (125.0 * scale) as i32;
             textures.push(
                 texture::Builder::new(texture_index + 1, position)
                     .with_z_index(-9)
@@ -73,7 +74,7 @@ impl Scenery {
                     .build(),
             );
 
-            position.point.y += 250;
+            position.point.y += (125.0 * scale) as i32;
             textures.push(
                 texture::Builder::new(texture_index + 2, position)
                     .with_z_index(-8)
@@ -81,7 +82,7 @@ impl Scenery {
                     .build(),
             );
 
-            position.point.y += 150;
+            position.point.y += (72.5 * scale) as i32;
             textures.push(
                 texture::Builder::new(texture_index + 3, position)
                     .with_z_index(-7)
