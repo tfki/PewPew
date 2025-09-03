@@ -2,7 +2,7 @@ use crate::comm::message::SerialToGuiKind;
 use crate::gui::engine::components::action::Action;
 use crate::gui::engine::components::movement::Movement;
 use crate::gui::engine::components::point_with_alignment::{HAlign, PointWithAlignment, VAlign};
-use crate::gui::engine::components::{text, texture, Point};
+use crate::gui::engine::components::{Point, text, texture};
 use crate::gui::engine::event::Event;
 use crate::gui::engine::gui_context::GuiContext;
 use crate::gui::engine::resources::Resources;
@@ -141,6 +141,7 @@ pub fn run(gui_context: &mut GuiContext) {
                         position,
                     )
                     .with_color(player_colors[i])
+                    .with_scale(viewport.height(),1440)
                     .build(),
                     Action::despawn_self_when(shoot_event.clone()),
                 ));
@@ -176,6 +177,7 @@ pub fn run(gui_context: &mut GuiContext) {
                     y: viewport.height() as i32 / 2,
                 }),
             )
+            .with_scale(viewport.height(), 1440)
             .build(),
             Action::despawn_self_when(all_players_joined_event.clone()),
         ));
@@ -229,6 +231,7 @@ pub fn run(gui_context: &mut GuiContext) {
                             },
                         )
                         .with_color(Color::WHITE)
+                        .with_scale(viewport.height(),1440)
                         .build(),
                         Action::despawn_self_when(start_game_countdown_tick_event.clone()),
                     ));
@@ -388,7 +391,7 @@ fn spawn_random_chickens(viewport: Rect, n: u32, world: &mut World, out_of_viewp
         let rand_big_range = rand::rng().random_range(-5..=5);
         let rand_small_neg_range = rand::rng().random_range(-5..=-1);
         let rand_small_pos_range = rand::rng().random_range(1..=5);
-        let rand_scale = rand::rng().random::<f32>() + 0.5;
+        let rand_scale = rand::rng().random::<f32>() + 0.5 * (viewport.height() as f32 / 1440.0);
 
         let (position, movement) = match rand::rng().random_range(0..4) {
             0 => (
