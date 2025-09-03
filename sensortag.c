@@ -293,7 +293,7 @@ void *main_thread(void *arg0)
         }
 
         if (magazine_left > 0) { // trigger cooldown LED on/off
-            if (is_button_cooldown) {
+            if (is_button_cooldown && false) { //! never turn on cooldown LED
                 GPIO_write(Board_GPIO_LED0, Board_GPIO_LED_ON);
             } else {
                 GPIO_write(Board_GPIO_LED0, Board_GPIO_LED_OFF);
