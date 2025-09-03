@@ -300,6 +300,8 @@ void *main_thread(void *arg0)
         }
 
         if (magazine_left == 0) {
+            button_pressed = false; // ignore button presses when mag empty
+
             if (time_counter - last_button_blinky > ONE_SECOND_COUNTER_VALUE / 4) { // blinky LED
                 last_button_blinky = time_counter;
                 GPIO_toggle(Board_GPIO_LED0);
