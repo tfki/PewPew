@@ -26,7 +26,8 @@ use std::time::{Duration, SystemTime};
 mod custom_components;
 mod custom_systems;
 
-pub fn run(gui_context: &mut GuiContext) {
+pub fn run(gui_context: &mut GuiContext) -> HashMap<u16,usize>
+{
     let viewport = {
         let (width, height) = gui_context.canvas().output_size().unwrap();
         Rect::new(0, 0, width, height)
@@ -88,7 +89,7 @@ pub fn run(gui_context: &mut GuiContext) {
         let num_players = Arc::new(Mutex::new(0));
         let countdown_seconds_left = Arc::new(Mutex::new(COUNTDOWN_START_VALUE as i32));
 
-        const COUNTDOWN_START_VALUE: u8 = 60;
+        const COUNTDOWN_START_VALUE: u8 = 10;
         let ammo_width = resources.images[texture_id_map["ammo.png"]].query().width;
         let magazine_scale = 0.15 * viewport.height() as f32 / ammo_width as f32;
 
@@ -305,9 +306,9 @@ pub fn run(gui_context: &mut GuiContext) {
         game_time.resume();
 
         let mut sensortag_to_player_id = HashMap::new();
-        for _ in 0.. {
+        loop {
             if countdown_finished_event.consume_all() > 0 {
-                return;
+                return sensortag_to_player_id;
             }
 
             if let Ok(message) = gui_context.comm().try_recv_from_serial() {
