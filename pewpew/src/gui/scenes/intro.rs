@@ -1,5 +1,5 @@
 use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
-use crate::gui::engine::components::{text, texture, Point};
+use crate::gui::engine::components::{Point, text, texture};
 use crate::gui::engine::event::Event;
 use crate::gui::engine::gui_context::GuiContext;
 use crate::gui::engine::resources::Resources;
@@ -8,11 +8,16 @@ use crate::gui::engine::systems;
 use hecs::World;
 use sdl2::image::LoadTexture;
 use sdl2::pixels::Color;
+use sdl2::rect::Rect;
 use std::path::Path;
 use std::thread;
 use std::time::{Duration, SystemTime};
 
 pub fn run(gui_context: &mut GuiContext) {
+    let viewport = {
+        let (width, height) = gui_context.canvas().output_size().unwrap();
+        Rect::new(0, 0, width, height)
+    };
     let texture_creator = gui_context.canvas().texture_creator();
     let ttf_context = sdl2::ttf::init().unwrap();
     {
@@ -31,14 +36,14 @@ pub fn run(gui_context: &mut GuiContext) {
         let mut game_time = Stopwatch::new_paused();
 
         let position = PointWithAlignment::new_center(Point {
-            x: 2560 / 2,
-            y: 1440 / 2,
+            x: (viewport.width() / 2) as i32,
+            y: (viewport.height() / 2) as i32,
         });
         let mut intro_done_event = Event::default();
         let texture = texture::Builder::new(0, position)
             .with_num_frames(14)
             .with_vertical_flip()
-            .with_scale(4.0)
+            .with_scale(viewport.height() as f32 / 360.0)
             .with_frame_advance_interval(Duration::from_millis(200))
             .on_animation_end(intro_done_event.clone())
             .build();
@@ -48,10 +53,11 @@ pub fn run(gui_context: &mut GuiContext) {
         world.spawn((text::Builder::new(
             "Moorhuhn".to_string(),
             PointWithAlignment::new_center(Point {
-                x: 2560 / 2,
-                y: 2 * 1440 / 3,
+                x: (viewport.width() / 2) as i32,
+                y: (2 * viewport.height() / 3) as i32,
             }),
         )
+        .with_scale(viewport.height(), 1440)
         .build(),));
 
         game_time.resume();
