@@ -3,13 +3,13 @@ use crate::gui::engine::components::action::Action;
 use crate::gui::engine::components::movement::Movement;
 use crate::gui::engine::components::point_with_alignment::{HAlign, PointWithAlignment, VAlign};
 use crate::gui::engine::components::texture::Texture;
-use crate::gui::engine::components::{Point, hitbox, text, texture, movement, timer};
+use crate::gui::engine::components::{Point, hitbox, texture, text};
 use crate::gui::engine::event::Event;
 use crate::gui::engine::gui_context::GuiContext;
 use crate::gui::engine::resources::Resources;
 use crate::gui::engine::stopwatch::Stopwatch;
 use crate::gui::engine::systems;
-use crate::gui::scenes::common::magazine::{Magazine, SpawnMagazineAction};
+use crate::gui::scenes::common::magazine::Magazine;
 use crate::gui::scenes::common::scenery::Scenery;
 use crate::gui::scenes::load_all_textures;
 use crate::serial::packet::MagazineStatus;
@@ -18,11 +18,10 @@ use log::trace;
 use rand::Rng;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use sdl2::render::BlendMode;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::{thread, vec};
 use std::time::{Duration, SystemTime};
+use std::{thread, vec};
 
 pub fn run(gui_context: &mut GuiContext, sensortag_to_player_id: HashMap<u16, usize>) {
     let viewport = {
@@ -84,9 +83,9 @@ pub fn run(gui_context: &mut GuiContext, sensortag_to_player_id: HashMap<u16, us
         {
             for i in 0..amount_of_players {
                 scores.lock().unwrap().push(0);
-                let mut shoot_event = Event::default();
+                let shoot_event = Event::default();
                 let mut reload_event = Event::default();
-                let mut score_changed = Event::default();
+                let score_changed = Event::default();
 
                 let magazine_status = Arc::new(Mutex::new(MagazineStatus {
                     ammo: 8,
@@ -140,11 +139,18 @@ pub fn run(gui_context: &mut GuiContext, sensortag_to_player_id: HashMap<u16, us
 
                 let score_changed_clone = score_changed.clone();
                 let scores_clone = scores.clone();
-                world.spawn((vec![Action::when(score_changed.clone(), move |_,world| {
-                    let text = text::Builder::new(format!("score: {}", scores_clone.lock().unwrap()[i]), position).build();
+                world.spawn((vec![Action::when(
+                    score_changed.clone(),
+                    move |_, world| {
+                        let text = text::Builder::new(
+                            format!("score: {}", scores_clone.lock().unwrap()[i]),
+                            position,
+                        )
+                        .build();
 
-                    world.spawn((text, Action::despawn_self_when(score_changed_clone.clone())));
-                })],));
+                        world.spawn((text, Action::despawn_self_when(score_changed_clone.clone())));
+                    },
+                )],));
 
                 // trigger shot event again, so that the magazine gets a chance to draw itself
                 reload_event.trigger();
@@ -188,8 +194,6 @@ pub fn run(gui_context: &mut GuiContext, sensortag_to_player_id: HashMap<u16, us
 
             if is_shooting {
                 systems::flashing_sequence::run(gui_context, &mut world, true, &mut game_time);
-
-
             }
 
             let frame_start = SystemTime::now();
@@ -353,11 +357,25 @@ fn spawn_random_chickens(viewport: Rect, n: u32, world: &mut World, out_of_viewp
                                 .on_outside_viewport(out_of_frame_event.clone())
                                 .build()
                         };
-                        let movement = Movement { f: Arc::new(move |t| Point{ x: 0, y: ((t as f32/2500.0) * viewport.height() as f32).powi(1) as i32 }), first_invocation_game_time: None };
-                        world.spawn((movement, dying_texture, vec![
-                            Action::despawn_self_when(out_of_frame_event.clone()),
-                            Action::spawn_random_chicken_when(out_of_frame_event, viewport, out_of_viewport_event_clone.clone())
-                        ]));
+                        let movement = Movement {
+                            f: Arc::new(move |t| Point {
+                                x: 0,
+                                y: ((t as f32 / 2500.0) * viewport.height() as f32).powi(1) as i32,
+                            }),
+                            first_invocation_game_time: None,
+                        };
+                        world.spawn((
+                            movement,
+                            dying_texture,
+                            vec![
+                                Action::despawn_self_when(out_of_frame_event.clone()),
+                                Action::spawn_random_chicken_when(
+                                    out_of_frame_event,
+                                    viewport,
+                                    out_of_viewport_event_clone.clone(),
+                                ),
+                            ],
+                        ));
                     }
                     let _ = world.despawn(entity_id);
                 }),
