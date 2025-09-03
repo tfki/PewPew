@@ -32,6 +32,7 @@ pub enum FromSerial {
 #[derive(Debug, Clone)]
 pub enum GuiToHitreg {
     FlashingSequenceStart{num_frames: u32, sequences: Vec<(Entity, Vec<bool>)>},
+    FlashBlackFrameEnd(SystemTime),
     FlashFrameEnd(SystemTime),
 }
 

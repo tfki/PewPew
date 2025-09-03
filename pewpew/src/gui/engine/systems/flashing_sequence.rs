@@ -45,10 +45,6 @@ pub fn run(
         .map(|(i, (entity, _hitbox))| (*entity, usize_to_vec_bool(i + 1, num_frames)))
         .collect::<Vec<_>>();
 
-    gui_context.canvas().set_draw_color(Color::BLACK);
-    gui_context.canvas().clear();
-    gui_context.canvas().present();
-
     gui_context
         .comm()
         .send(GuiToHitreg::FlashingSequenceStart {
@@ -57,7 +53,16 @@ pub fn run(
         })
         .unwrap();
 
+    gui_context.canvas().set_draw_color(Color::BLACK);
+    gui_context.canvas().clear();
+    gui_context.canvas().present();
+
     thread::sleep(time_per_frame);
+
+    gui_context
+        .comm()
+        .send(GuiToHitreg::FlashBlackFrameEnd(SystemTime::now()))
+        .unwrap();
 
     for frame in 0..num_frames {
         let frame_start = SystemTime::now();
