@@ -46,10 +46,6 @@ static uint8_t magazine_left = MAGAZINE_SIZE;
 static const int ONE_SECOND_COUNTER_VALUE = 444; 
 static const float G_RELOAD_WHIP_THRESHOLD = 3;
 
-
-static float latestGyroValue[3];
-static float latestAccValue[3];
-
 static uint16_t my_id = 0;
 
 static RF_Object rfObject;
@@ -63,12 +59,6 @@ void timerCallback(GPTimerCC26XX_Handle handle, GPTimerCC26XX_IntMask interruptM
     // interrupt callback code goes here. Minimize processing in interrupt.
     time_counter++;
 }
-
-PIN_Config pinTable[] =
-{
-    Board_PIN_LED2 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
-	PIN_TERMINATE
-};
 
 void rf_send(uint8_t* data, size_t length) {
     RF_cmdPropTx.pktLen = length;
