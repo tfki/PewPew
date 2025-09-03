@@ -2,7 +2,7 @@ use crate::comm::message::SerialToGuiKind;
 use crate::gui::engine::components::action::Action;
 use crate::gui::engine::components::movement::Movement;
 use crate::gui::engine::components::point_with_alignment::{HAlign, PointWithAlignment, VAlign};
-use crate::gui::engine::components::texture::Texture;
+use crate::gui::engine::components::texture::{AnimationEndBehavior, Texture};
 use crate::gui::engine::components::{Point, hitbox, texture, text};
 use crate::gui::engine::event::Event;
 use crate::gui::engine::gui_context::GuiContext;
@@ -353,14 +353,15 @@ fn spawn_random_chickens(viewport: Rect, n: u32, world: &mut World, out_of_viewp
                             texture::Builder::new(2, old_texture.position)
                                 .with_scale(old_texture.scale)
                                 .with_num_frames(8)
-                                .with_frame_advance_interval(Duration::from_millis(50))
+                                .with_animation_end_behavior(AnimationEndBehavior::Freeze)
+                                .with_frame_advance_interval(Duration::from_millis(99))
                                 .on_outside_viewport(out_of_frame_event.clone())
                                 .build()
                         };
                         let movement = Movement {
                             f: Arc::new(move |t| Point {
                                 x: 0,
-                                y: ((t as f32 / 2500.0) * viewport.height() as f32).powi(1) as i32,
+                                y: ((t as f32 / 1500.0).powi(2) * viewport.height() as f32) as i32,
                             }),
                             first_invocation_game_time: None,
                         };

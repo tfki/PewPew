@@ -4,6 +4,12 @@ use crate::gui::engine::components::point_with_alignment::PointWithAlignment;
 use crate::gui::engine::event::Event;
 
 #[derive(Clone)]
+pub enum AnimationEndBehavior {
+    Freeze,
+    Loop,
+}
+
+#[derive(Clone)]
 pub struct Texture {
     pub position: PointWithAlignment,
 
@@ -11,6 +17,7 @@ pub struct Texture {
     /// its original point needs to be stored
     /// as the movement function outputs a point difference to an original position
     pub original_point: Point,
+    pub animation_end_behavior: AnimationEndBehavior,
     pub z_index: i32,
     pub image_id: usize,
     pub num_frames: u32,
@@ -34,6 +41,7 @@ pub struct Texture {
 
 pub struct Builder {
     position: PointWithAlignment,
+    animation_end_behavior: AnimationEndBehavior,
     z_index: i32,
     image_id: usize,
     num_frames: u32,
@@ -53,6 +61,7 @@ impl Builder {
         Builder {
             position,
             image_id,
+            animation_end_behavior: AnimationEndBehavior::Loop,
             z_index: 0,
             num_frames: 1,
             current_frame: 0,
@@ -65,6 +74,11 @@ impl Builder {
             at_viewport_edge_event: None,
             outside_viewport_event: None,
         }
+    }
+
+    pub fn with_animation_end_behavior(mut self, animation_end_behavior: AnimationEndBehavior) -> Self {
+        self.animation_end_behavior = animation_end_behavior;
+        self
     }
 
     pub fn on_animation_end(mut self, event: Event) -> Self {
@@ -124,6 +138,7 @@ impl Builder {
     pub fn build(self) -> Texture {
         Texture {
             position: self.position,
+            animation_end_behavior: self.animation_end_behavior,
             image_id: self.image_id,
             z_index: self.z_index,
             num_frames: self.num_frames,

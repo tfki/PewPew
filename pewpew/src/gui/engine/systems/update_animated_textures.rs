@@ -1,4 +1,4 @@
-use crate::gui::engine::components::texture::Texture;
+use crate::gui::engine::components::texture::{AnimationEndBehavior, Texture};
 use crate::gui::engine::stopwatch::Stopwatch;
 use hecs::World;
 
@@ -19,12 +19,17 @@ pub fn run(world: &mut World, game_time: &mut Stopwatch) {
                     event.trigger();
                 }
 
-                if texture.current_keyframe == texture.num_frames
-                    && let Some(event) = &mut texture.animation_end_event
-                {
-                    event.trigger();
+                match texture.animation_end_behavior {
+                    AnimationEndBehavior::Freeze
+                        if texture.current_keyframe == texture.num_frames =>
+                    {
+                        texture.current_keyframe -= 1;
+                    }
+                    AnimationEndBehavior::Loop => {
+                        texture.current_keyframe %= texture.num_frames;
+                    }
+                    _ => {}
                 }
-                texture.current_keyframe %= texture.num_frames;
             }
             None => {
                 texture.next_keyframe_switch_at_elapsed_game_time =

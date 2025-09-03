@@ -9,48 +9,48 @@
 
 ## DOD (Definition of Done)
 ### Modus 1
-- [ ] auf Bildschirm schießen mit HitReg durch BinSearch
+- [x] auf Bildschirm schießen mit HitReg durch BinSearch
 ### Modus 2
 - [ ] Multiplayer Mohrhuhn
-  - [ ] Multiplayer auf gleichem Bildschirm
-  - [ ] custom, präzise Hitboxen
-  - [ ] statisches Bild (nicht rechts/links verschieben)
+  - [x] Multiplayer auf gleichem Bildschirm
+  - [ ] ~~custom, präzise Hitboxen~~
+  - [x] statisches Bild (nicht rechts/links verschieben)
   - [ ] Figuren
-    - [ ] fliegende Hühner
+    - [x] fliegende Hühner
     - [ ] bienendude
-    - [ ] rennende Hühner
-    - [ ] Pfannendude
-  - [ ] Jogger verschwinden hinter mind. einem Obj
+    - [ ] ~~rennende Hühner~~
+    - [ ] ~~Pfannendude~~
+  - [ ] ~~Jogger verschwinden hinter mind. einem Obj~~
   - [ ] Punktestand für Spieler und Timer
   - [ ] Scoreboard vom aktuellen Spiel
-  - [ ] **Reload per Gyro Flick** nach x Schuss --> Munitionanzeige
-  - [ ] Ton bei Schuss & Treffer
-  - [ ] **Pre-game lobby**, wo bei schüssen spielername angezeigt wird um spieler den Sensortags (Waffen) zuzuordnen
+  - [x] **Reload per Gyro Flick** nach x Schuss --> Munitionanzeige
+  - [ ] ~~Ton bei Schuss & Treffer~~
+  - [x] **Pre-game lobby**, wo bei schüssen spielername angezeigt wird um spieler den Sensortags (Waffen) zuzuordnen
 - [ ] HitReg
-  - [ ] ein ganz schwarzer Frame
-  - [ ] dann **binärsuche** alle Objekte flashen
+  - [x] ein ganz schwarzer Frame
+  - [x] dann **binärsuche** alle Objekte flashen
   - [ ] **<200ms** detection
-  - [ ] Delay zwischen Schüssen von **1 sec** --> LED rot
-  - [ ] während eines HitReg werden andere Schüsse durch selbe Frequenz registriert
-  - [ ] wenn keine HitReg möglich dann einfach kein Treffer (halt das Teil still!)
-  - [ ] wenn 2 dasselbe treffen bekommen beide Punkte (jeder die Hälfte)
+  - [x] Delay zwischen Schüssen von **1 sec** ~~--> LED rot~~
+  - [ ] ~~während eines HitReg werden andere Schüsse durch selbe Frequenz registriert~~
+  - [x] wenn keine HitReg möglich dann einfach kein Treffer (halt das Teil still!)
+  - [ ] ~~wenn 2 dasselbe treffen bekommen beide Punkte (jeder die Hälfte)~~
 - [ ] Waffe
-  - [ ] **3D gedruckte** Halterung für sensortag (länge, dicke, etc testen)
-  - [ ] Lauf vor lichtsensor
-  - [ ] trigger durch **eigenen Knopf --> anlöten**
-  - [ ] **LED** nach außen sichbar machen --> Glasfaser?
-  - [ ] Halterung für board --> klicken, schrauben, pins?
-- [ ] Sensorboard
+  - [x] **3D gedruckte** Halterung für sensortag (länge, dicke, etc testen)
+  - [x] Lauf vor lichtsensor
+  - [ ] ~~trigger durch **eigenen Knopf --> anlöten**~~
+  - [ ] ~~**LED** nach außen sichbar machen --> Glasfaser?~~
+  - [x] Halterung für board --> klicken, schrauben, pins?
+- [x] Sensorboard
   - GCU (Gun control Unit)
-  - [ ] Nachlade-Gyro-Flick Erkennung
-  - [ ] nach reload, Nachladenachricht senden (siehe Interfaces)
+  - [x] Nachlade-Gyro-Flick Erkennung
+  - [x] nach reload, Nachladenachricht senden (siehe Interfaces)
   - LED
-    - [ ] rot leuchten bei 1sec schussdelay
-    - [ ] blinken wenn magazin leer
-  - [ ] schickt brightness bei änderung mit timestamp (siehe Interfaces)
-  - [ ] generiert irgendwie ID
-  - [ ] schickt Nachricht bei Schuss (siehe Interfaces)
-- [ ] Pregame lobby
+    - [ ] ~~rot leuchten bei 1sec schussdelay~~
+    - [ ] ~~blinken wenn magazin leer~~
+  - [x] schickt brightness bei änderung mit timestamp (siehe Interfaces)
+  - [x] generiert irgendwie ID
+  - [x] schickt Nachricht bei Schuss (siehe Interfaces)
+- [x] Pregame lobby
   - zeigt übrige schüsse aller spieler an
   - spiel geht los wenn alle volles mag haben
   - einmal schießen um lobby zu  betreten
