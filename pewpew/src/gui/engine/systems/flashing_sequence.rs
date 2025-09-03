@@ -2,7 +2,7 @@ use crate::comm::message::{GuiToHitreg, HitregToGui};
 use crate::gui::engine::components::hitbox::Hitbox;
 use crate::gui::engine::stopwatch::Stopwatch;
 use crate::gui::gui_context::GuiContext;
-use hecs::World;
+use hecs::{Entity, World};
 use log::debug;
 use sdl2::pixels::Color;
 use std::thread;
@@ -24,7 +24,8 @@ pub fn run(
     world: &mut World,
     show_frames: bool,
     game_time: &mut Stopwatch,
-) {
+    sensortag_id: u16,
+) -> Option<Entity> {
     game_time.pause();
     debug!(target: "Gui Thread", "starting flashing sequence");
 
@@ -48,6 +49,7 @@ pub fn run(
     gui_context
         .comm()
         .send(GuiToHitreg::FlashingSequenceStart {
+            sensortag_id,
             num_frames,
             sequences,
         })
@@ -125,7 +127,12 @@ pub fn run(
             .fill_rect(hitbox.position.align_rect(hitbox.width, hitbox.height))
             .unwrap();
         gui_context.canvas().present();
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(time_per_frame);
+
+        game_time.resume();
+        Some(victim)
+    } else {
+        game_time.resume();
+        None
     }
-    game_time.resume();
 }

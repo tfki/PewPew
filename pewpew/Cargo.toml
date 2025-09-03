@@ -17,4 +17,4 @@ env_logger = "0.11.8"
 hecs = { version = "0.10.5", features = ["macros"] }
 
 # all things graphics
-sdl2 = { version = "0.38.0", features = ["image", "ttf"] }
+sdl2 = { version = "0.38.0", features = ["image", "ttf", "mixer"] }

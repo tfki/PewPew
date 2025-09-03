@@ -10,6 +10,7 @@ pub mod game;
 pub mod intro;
 pub mod pregame;
 pub mod sandbox;
+pub mod scoreboard;
 
 #[derive(Debug)]
 pub enum LoadAllTexturesError {

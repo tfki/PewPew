@@ -4,9 +4,9 @@ use crate::gui::engine::components::point_with_alignment::{HAlign, PointWithAlig
 use crate::gui::engine::components::texture::Texture;
 use crate::gui::engine::components::{texture, Point};
 use crate::gui::engine::event::Event;
-use crate::serial::packet::MagazineStatus;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use crate::gui::scenes::common::PlayerData;
 
 #[derive(hecs::Bundle)]
 pub struct Magazine {
@@ -17,7 +17,8 @@ impl Magazine {
     pub fn new(
         shoot_event: Event,
         reload_event: Event,
-        magazine_status: Arc<Mutex<MagazineStatus>>,
+        player_datas: Arc<Mutex<Vec<PlayerData>>>,
+        player_id: usize,
         position: PointWithAlignment,
         scale: f32,
         ammo_virgin_texture_id: usize,
@@ -51,7 +52,8 @@ impl Magazine {
             actions: Action::update_ammo_info_when(
                 shoot_event,
                 reload_event,
-                magazine_status,
+                player_datas,
+                player_id,
                 position,
                 scale,
                 shell_used_texture,
@@ -68,7 +70,8 @@ pub trait MakeAmmoWork {
     fn update_ammo_info_when(
         shoot_event: Event,
         reload_event: Event,
-        magazine_status: Arc<Mutex<MagazineStatus>>,
+        player_datas: Arc<Mutex<Vec<PlayerData>>>,
+        player_id: usize,
         start_position: PointWithAlignment,
         scale: f32,
         ammo_used_texture: Texture,
@@ -81,9 +84,9 @@ pub trait MakeAmmoWork {
         let mut ammo_virgin_texture_clone1 = ammo_virgin_texture.clone();
         let mut ammo_used_texture_clone1 = ammo_used_texture.clone();
         let mut ammo_virgin_texture_clone2 = ammo_virgin_texture.clone();
-        let magazine_status_clone = magazine_status.clone();
+        let player_datas_clone = player_datas.clone();
         vec![Action::when(shoot_event, move |_, world| {
-            let magazine_status = magazine_status_clone.lock().unwrap();
+            let magazine_status = player_datas_clone.lock().unwrap()[player_id].magazine_status;
 
             for entity in shell_entities_clone1.lock().unwrap().iter() {
                 let _ = world.despawn(*entity);
@@ -129,7 +132,7 @@ pub trait MakeAmmoWork {
                 Action::despawn_self_when(shell_gone_event),
             ));
         }), Action::when(reload_event, move |_, world| {
-            let magazine_status = magazine_status.lock().unwrap();
+            let magazine_status = player_datas.lock().unwrap()[player_id].magazine_status;
 
             for entity in shell_entities_clone2.lock().unwrap().iter() {
                 let _ = world.despawn(*entity);
@@ -163,7 +166,8 @@ pub trait SpawnMagazineAction {
     fn spawn_magazine_when(
         shoot_event: Event,
         reload_event: Event,
-        magazine_status: Arc<Mutex<MagazineStatus>>,
+        player_datas: Arc<Mutex<Vec<PlayerData>>>,
+        player_id: usize,
         position: PointWithAlignment,
         scale: f32,
         ammo_virgin_texture_id: usize,
@@ -171,12 +175,13 @@ pub trait SpawnMagazineAction {
     ) -> Action {
         let mut shoot_event_clone = shoot_event.clone();
         let reload_event_clone = reload_event.clone();
-        let magazine_status_clone = magazine_status.clone();
+        let player_datas_clone = player_datas.clone();
         Action::when_oneshot(shoot_event, move |_, world| {
             let magazine = Magazine::new(
                 shoot_event_clone.clone(),
                 reload_event_clone.clone(),
-                magazine_status_clone.clone(),
+                player_datas_clone.clone(),
+                player_id,
                 position,
                 scale,
                 ammo_virgin_texture_id,

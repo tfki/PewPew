@@ -23,10 +23,9 @@ use sdl2::rect::Rect;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 use std::{thread, vec};
+use sdl2::render::BlendMode;
 
-const GAME_DURATION_SEC: u64 = 20;
-
-pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>>>) -> Arc<Mutex<Vec<PlayerData>>> {
+pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>>>) {
     let viewport = {
         let (width, height) = gui_context.canvas().output_size().unwrap();
         Rect::new(0, 0, width, height)
@@ -56,7 +55,7 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
 
         // game end event
         let mut game_end_event = Event::default();
-        let mut seconds_left = Arc::new(Mutex::new(GAME_DURATION_SEC));
+        let mut seconds_left = Arc::new(Mutex::new(11));
         let mut game_countdown_tick = Event::default();
 
         world.spawn((timer::Builder::new(
@@ -88,7 +87,7 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
                             h_align: HAlign::Center,
                         },
                     )
-                        .with_color(Color::BLACK)
+                        .with_color(Color::WHITE)
                         .with_scale(viewport.height(), 1080)
                     .build(),
                     Action::despawn_self_when(game_countdown_tick_clone.clone()),
@@ -111,170 +110,57 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
                 spawn_new_chicken_event.clone(),
             ),));
 
-            for _ in 0..10 {
+            for _ in 0..250 {
                 spawn_new_chicken_event.trigger();
             }
         }
 
-        let mut shoot_events = Vec::new();
-        let mut reload_events = Vec::new();
-        let mut score_changed_events = Vec::new();
-
-        let ammo_width = resources.images[texture_id_map["ammo.png"]].query().width;
-        let magazine_scale = 0.15 * viewport.height() as f32 / ammo_width as f32;
-        let amount_of_players = player_datas.lock().unwrap().len();
-        // spawn players
-        {
-            for i in 0..amount_of_players {
-                let shoot_event = Event::default();
-                let mut reload_event = Event::default();
-                let mut score_changed = Event::default();
-
-                let position = match i {
-                    0 => PointWithAlignment {
-                        point: Point { x: 0, y: 0 },
-                        v_align: VAlign::Top,
-                        h_align: HAlign::Left,
+        let num_players = player_datas.lock().unwrap().len();
+        for i in 0..num_players {
+            let position = match i {
+                0 => PointWithAlignment {
+                    point: Point { x: 0, y: 0 },
+                    v_align: VAlign::Top,
+                    h_align: HAlign::Left,
+                },
+                1 => PointWithAlignment {
+                    point: Point {
+                        x: viewport.width() as i32,
+                        y: 0,
                     },
-                    1 => PointWithAlignment {
-                        point: Point {
-                            x: viewport.width() as i32,
-                            y: 0,
-                        },
-                        v_align: VAlign::Top,
-                        h_align: HAlign::Right,
+                    v_align: VAlign::Top,
+                    h_align: HAlign::Right,
+                },
+                2 => PointWithAlignment {
+                    point: Point {
+                        x: 0,
+                        y: viewport.height() as i32,
                     },
-                    2 => PointWithAlignment {
-                        point: Point {
-                            x: 0,
-                            y: viewport.height() as i32,
-                        },
-                        v_align: VAlign::Bottom,
-                        h_align: HAlign::Left,
+                    v_align: VAlign::Bottom,
+                    h_align: HAlign::Left,
+                },
+                3 => PointWithAlignment {
+                    point: Point {
+                        x: viewport.width() as i32,
+                        y: viewport.height() as i32,
                     },
-                    3 => PointWithAlignment {
-                        point: Point {
-                            x: viewport.width() as i32,
-                            y: viewport.height() as i32,
-                        },
-                        v_align: VAlign::Bottom,
-                        h_align: HAlign::Right,
-                    },
-                    _ => unreachable!(),
-                };
+                    v_align: VAlign::Bottom,
+                    h_align: HAlign::Right,
+                },
+                _ => unreachable!(),
+            };
 
-                // spawn magazine
-                // and despawn spawner, so that spawn magazine action only runs once
-                let magazine = Magazine::new(
-                    shoot_event.clone(),
-                    reload_event.clone(),
-                    player_datas.clone(),
-                    i,
-                    position,
-                    magazine_scale,
-                    texture_id_map["ammo.png"],
-                    texture_id_map["ammo.png"],
-                );
-                world.spawn(magazine);
-
-                let mut score_position = position;
-                match i {
-                    0 | 1 => {
-                        score_position.point.y +=
-                            ((viewport.height() as f32 / 1080.0) * 150.0) as i32
-                    }
-                    2 | 3 => {
-                        score_position.point.y -=
-                            ((viewport.height() as f32 / 1080.0) * 150.0) as i32
-                    }
-                    _ => unreachable!(),
-                }
-                let score_changed_clone = score_changed.clone();
-                let player_datas_clone = player_datas.clone();
-                world.spawn((vec![Action::when(
-                    score_changed.clone(),
-                    move |_, world| {
-                        let text = text::Builder::new(
-                            format!("score: {}", player_datas_clone.lock().unwrap()[i].score),
-                            score_position,
-                        )
-                        .with_color(Color::BLACK)
-                        .with_scale(viewport.height(), 2160)
-                        .build();
-
-                        world.spawn((text, Action::despawn_self_when(score_changed_clone.clone())));
-                    },
-                )],));
-
-                // trigger shot event again, so that the magazine gets a chance to draw itself
-                reload_event.trigger();
-
-                // trigger once so score is visible at the beginning
-                score_changed.trigger();
-
-                shoot_events.push(shoot_event.clone());
-                reload_events.push(reload_event.clone());
-                score_changed_events.push(score_changed.clone());
-            }
+            world.spawn((text::Builder::new(format!("Score: {}", player_datas.lock().unwrap()[i].score), position).with_scale(viewport.height(), 1080).build(),));
         }
 
         game_time.resume();
 
         loop {
             if game_end_event.consume_all() > 0 {
-                return player_datas;
-            }
-
-            let mut shooter = None;
-            if let Ok(message) = gui_context.comm().try_recv_from_serial() {
-                let mut lock = player_datas.lock().unwrap();
-                let player_id = lock
-                    .iter_mut()
-                    .enumerate()
-                    .find(|(_, data)| data.sensortag_id == message.sensortag_id);
-                if let Some((player_id, data)) = player_id {
-                    match message.kind {
-                        SerialToGuiKind::Reload => {
-                            data.magazine_status = MagazineStatus {
-                                ammo: message.ammo,
-                                ammo_max: message.ammo_max,
-                            };
-                            reload_events[player_id].trigger();
-                        }
-                        SerialToGuiKind::Shot => {
-                            data.magazine_status = MagazineStatus {
-                                ammo: message.ammo,
-                                ammo_max: message.ammo_max,
-                            };
-                            shoot_events[player_id].trigger();
-                            shooter = Some((player_id, message.sensortag_id));
-                        }
-                    }
-                }
-            }
-
-            if let Some((player_id, sensortag_id)) = shooter {
-                if let Some(victim_id) = systems::flashing_sequence::run(
-                    gui_context,
-                    &mut world,
-                    true,
-                    &mut game_time,
-                    sensortag_id,
-                ) {
-                    let victim = world.entity(victim_id).unwrap();
-                    let hitbox = victim.get::<&Hitbox>().unwrap();
-
-                    let score =
-                        (hitbox.width as f32 / 200.0) / (viewport.height() as f32 / 1440.0) - 0.5;
-
-                    player_datas.lock().unwrap()[player_id].score +=
-                        20_u32.saturating_sub((score * 5.0) as u32);
-                    score_changed_events[player_id].trigger();
-                }
-
                 while let Ok(_) = gui_context.comm().try_recv_from_serial() {
                     // empty the buffers
                 }
+                return;
             }
 
             let frame_start = SystemTime::now();
@@ -287,6 +173,15 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
             systems::update_movements::run(&mut world, &mut game_time);
             systems::update_animated_textures::run(&mut world, &mut game_time);
             systems::draw_textures::run(gui_context.canvas(), &mut world, &mut resources);
+
+            // make everything drawn up to this point appear slightly darker
+            gui_context.canvas().set_blend_mode(BlendMode::Blend);
+            gui_context
+                .canvas()
+                .set_draw_color(Color::RGBA(0, 0, 0, 150));
+            gui_context.canvas().fill_rect(viewport).unwrap();
+            gui_context.canvas().set_blend_mode(BlendMode::None);
+
             systems::draw_texts::run(
                 gui_context.canvas(),
                 &mut world,
@@ -405,62 +300,16 @@ fn spawn_random_chickens(viewport: Rect, n: u32, world: &mut World, out_of_viewp
             texture_builder = texture_builder.with_vertical_flip();
         }
 
-        let hit_event = Event::default();
         let texture = texture_builder.build();
-        let out_of_viewport_event_clone = out_of_viewport_event.clone();
         world.spawn((
             movement,
             texture,
-            hitbox::Builder::new(
-                position,
-                (200.0 * rand_scale) as u32,
-                (200.0 * rand_scale) as u32,
-            )
-            .on_hit(hit_event.clone())
-            .build(),
             vec![
                 Action::despawn_self_when(my_out_of_viewport_event.clone()),
                 Action::trigger_other_event_when(
                     my_out_of_viewport_event,
                     out_of_viewport_event.clone(),
                 ),
-                Action::when(hit_event, move |entity_id, world| {
-                    {
-                        let out_of_frame_event = Event::default();
-                        let dying_texture = {
-                            let entity = world.entity(entity_id).unwrap();
-                            let old_texture = entity.get::<&Texture>().unwrap();
-
-                            texture::Builder::new(2, old_texture.position)
-                                .with_scale(old_texture.scale)
-                                .with_num_frames(8)
-                                .with_animation_end_behavior(AnimationEndBehavior::Freeze)
-                                .with_frame_advance_interval(Duration::from_millis(99))
-                                .on_outside_viewport(out_of_frame_event.clone())
-                                .build()
-                        };
-                        let movement = Movement {
-                            f: Arc::new(move |t| Point {
-                                x: 0,
-                                y: ((t as f32 / 1500.0).powi(2) * viewport.height() as f32) as i32,
-                            }),
-                            first_invocation_game_time: None,
-                        };
-                        world.spawn((
-                            movement,
-                            dying_texture,
-                            vec![
-                                Action::despawn_self_when(out_of_frame_event.clone()),
-                                Action::spawn_random_chicken_when(
-                                    out_of_frame_event,
-                                    viewport,
-                                    out_of_viewport_event_clone.clone(),
-                                ),
-                            ],
-                        ));
-                    }
-                    let _ = world.despawn(entity_id);
-                }),
             ],
         ));
     }

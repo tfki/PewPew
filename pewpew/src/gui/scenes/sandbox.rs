@@ -119,7 +119,7 @@ pub fn run(gui_context: &mut GuiContext) {
                 if shoot_event.consume_all() > 0 {
                     // then, show flashing sequence
                     // this takes how many ever frames it needs O(ceil(log2(|hitboxes|)))
-                    systems::flashing_sequence::run(gui_context, &mut world, true, &mut game_time);
+                    //systems::flashing_sequence::run(gui_context, &mut world, true, &mut game_time);
                 } else {
                     systems::work_timers::run(&mut world, &mut game_time);
                     systems::update_movements::run(&mut world, &mut game_time);
