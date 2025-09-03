@@ -21,7 +21,7 @@ use sdl2::render::BlendMode;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant};
 
 mod custom_components;
 mod custom_systems;
@@ -331,7 +331,7 @@ pub fn run(gui_context: &mut GuiContext) {
                 }
             }
 
-            let frame_start = SystemTime::now();
+            let frame_start = Instant::now();
 
             gui_context.canvas().set_draw_color(Color::BLACK);
             gui_context.canvas().clear();
@@ -359,8 +359,8 @@ pub fn run(gui_context: &mut GuiContext) {
 
             gui_context.canvas().present();
 
-            let frame_end = SystemTime::now();
-            let frame_duration = frame_end.duration_since(frame_start).unwrap();
+            let frame_end = Instant::now();
+            let frame_duration = frame_end.duration_since(frame_start);
             let wait_duration =
                 Duration::from_millis(33_u128.saturating_sub(frame_duration.as_millis()) as u64);
 
