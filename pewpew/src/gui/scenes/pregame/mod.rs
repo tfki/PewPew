@@ -89,7 +89,7 @@ pub fn run(gui_context: &mut GuiContext) -> HashMap<u16,usize>
         let num_players = Arc::new(Mutex::new(0));
         let countdown_seconds_left = Arc::new(Mutex::new(COUNTDOWN_START_VALUE as i32));
 
-        const COUNTDOWN_START_VALUE: u8 = 10;
+        const COUNTDOWN_START_VALUE: u8 = 5;
         let ammo_width = resources.images[texture_id_map["ammo.png"]].query().width;
         let magazine_scale = 0.15 * viewport.height() as f32 / ammo_width as f32;
 
