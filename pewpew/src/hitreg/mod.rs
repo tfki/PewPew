@@ -3,7 +3,6 @@ use crate::comm::message::ToHitreg;
 use crate::comm::message::{GuiToHitreg, HitregToGui};
 use crate::common::cancel_token::CancelToken;
 use log::{debug, error, info};
-use std::collections::VecDeque;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug)]
@@ -12,7 +11,14 @@ enum State {
     WaitingForFlashFrameEnd(u32),
 }
 
-const BRIGHTNESS_THRESHOLD: u16 = 150;
+pub struct BrightnessBuffer {
+    pub val: u16,
+    pub sensortag_id: u16,
+    pub time: u32,
+    pub is_white: bool,
+}
+
+const BRIGHTNESS_GRADIENT_THRESHOLD: u16 = 100;
 
 pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
     move || {
@@ -20,25 +26,42 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
         let mut chicken_data = Vec::new();
         let mut gui_sequence: Vec<(u16, u32, bool)> = Vec::new();
         let mut gui_timestamps: Vec<SystemTime> = Vec::new();
-        let mut serial_brightness_buffer: VecDeque<(u16, u32, bool)> = VecDeque::with_capacity(20);
+        // val, tag_id, timestamp, white/black
+        let mut serial_brightness_buffer = BrightnessBuffer {
+            val: 0,
+            sensortag_id: 0,
+            time: 0,
+            is_white: false,
+        };
 
         fn store_brightness_in_buffer(
-            buf: &mut VecDeque<(u16, u32, bool)>,
+            buf: &mut BrightnessBuffer,
             sensortag_id: u16,
             time: u32,
             val: u16,
         ) {
             debug!(target: "Hitreg Thread", "received brightness {val} at t={}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis());
-            if buf.len() == buf.capacity() {
-                buf.pop_back();
-            }
 
-            if val >= BRIGHTNESS_THRESHOLD {
-                // WHITE
-                buf.push_front((sensortag_id, time, true));
+            let new_is_white: bool;
+            if buf.is_white {
+                if buf.val > val && buf.val - val > BRIGHTNESS_GRADIENT_THRESHOLD {
+                    // gradient indicates it switched to LOW
+                    new_is_white = false;
+                } else {
+                    new_is_white = true;
+                }
+            } else if val > buf.val && val - buf.val > BRIGHTNESS_GRADIENT_THRESHOLD {
+                // gradient indicates it switched to HIGH
+                new_is_white = true;
             } else {
-                buf.push_front((sensortag_id, time, false));
+                new_is_white = false;
             }
+            *buf = BrightnessBuffer {
+                val,
+                sensortag_id,
+                time,
+                is_white: new_is_white,
+            };
         }
 
         loop {
@@ -104,14 +127,21 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                 }
                 State::WaitingForFlashFrameEnd(num_frames_to_go) => {
                     match comm.recv().unwrap() {
+                        ToHitreg::FromGui(GuiToHitreg::FlashBlackFrameEnd(_time)) => {
+                            // set current Color to Black
+                            serial_brightness_buffer.is_white = false;
+                        }
                         ToHitreg::FromGui(GuiToHitreg::FlashFrameEnd(time)) => {
                             gui_timestamps.push(time);
-                            if serial_brightness_buffer.is_empty() {
-                                error!(target: "Hitreg Thread", "no brightness measurements available");
+                            if serial_brightness_buffer.time == 0 {
+                                error!(target: "Hitreg Thread", "no brightness measurements available (or timestamp is 0)");
                             }
                             // read latest serial_brightness_buffer value into gui_sequence
-                            let first = serial_brightness_buffer.front().copied().unwrap();
-                            gui_sequence.push(first);
+                            gui_sequence.push((
+                                serial_brightness_buffer.sensortag_id,
+                                serial_brightness_buffer.time,
+                                serial_brightness_buffer.is_white,
+                            ));
                             state = State::WaitingForFlashFrameEnd(num_frames_to_go - 1);
                             debug!(target: "Hitreg Thread", "changing state to {state:?} at t={}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis());
                         }
