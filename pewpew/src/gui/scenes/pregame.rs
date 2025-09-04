@@ -96,7 +96,7 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
 
         // spawn players
         {
-            for i in 0..4 {
+            for i in 0..2 {
                 let shoot_event = Event::default();
                 let reload_event = Event::default();
 
