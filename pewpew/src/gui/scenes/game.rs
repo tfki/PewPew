@@ -1,14 +1,16 @@
 use crate::comm::message::SerialToGuiKind;
 use crate::gui::engine::components::action::Action;
+use crate::gui::engine::components::hitbox::Hitbox;
 use crate::gui::engine::components::movement::Movement;
 use crate::gui::engine::components::point_with_alignment::{HAlign, PointWithAlignment, VAlign};
 use crate::gui::engine::components::texture::{AnimationEndBehavior, Texture};
-use crate::gui::engine::components::{Point, hitbox, texture, text};
+use crate::gui::engine::components::{Point, hitbox, text, texture, timer};
 use crate::gui::engine::event::Event;
 use crate::gui::engine::gui_context::GuiContext;
 use crate::gui::engine::resources::Resources;
 use crate::gui::engine::stopwatch::Stopwatch;
 use crate::gui::engine::systems;
+use crate::gui::scenes::common::PlayerData;
 use crate::gui::scenes::common::magazine::Magazine;
 use crate::gui::scenes::common::scenery::Scenery;
 use crate::gui::scenes::load_all_textures;
@@ -18,18 +20,25 @@ use log::trace;
 use rand::Rng;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 use std::{thread, vec};
+use sdl2::mixer::Chunk;
 
-pub fn run(gui_context: &mut GuiContext, sensortag_to_player_id: HashMap<u16, usize>) {
+const GAME_DURATION_SEC: u64 = 20;
+
+pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>>>) -> Arc<Mutex<Vec<PlayerData>>> {
     let viewport = {
         let (width, height) = gui_context.canvas().output_size().unwrap();
         Rect::new(0, 0, width, height)
     };
     let texture_creator = gui_context.canvas().texture_creator();
     let ttf_context = sdl2::ttf::init().unwrap();
+
+    // Load and play mp3
+    let shoot_sounds = [Chunk::from_file("res/audio/gun-shot-359196.mp3").unwrap(), Chunk::from_file("res/audio/glock19-18535.mp3").unwrap()];
+    let reload_sounds = [Chunk::from_file("res/audio/ak47_boltpull.mp3").unwrap(), Chunk::from_file("res/audio/_en_sound_glock18-slideforward_.mp3").unwrap()];
+    let death_sounds = [Chunk::from_file("res/audio/wilhelm_scream.mp3").unwrap(), Chunk::from_file("res/audio/ahhhh.mp3").unwrap()];
     {
         let default_font = ttf_context
             .load_font("res/fonts/Walter_Turncoat/WalterTurncoat-Regular.ttf", 128)
@@ -50,6 +59,49 @@ pub fn run(gui_context: &mut GuiContext, sensortag_to_player_id: HashMap<u16, us
             &mut resources,
             &texture_creator,
         ));
+
+        // game end event
+        let mut game_end_event = Event::default();
+        let seconds_left = Arc::new(Mutex::new(GAME_DURATION_SEC));
+        let mut game_countdown_tick = Event::default();
+
+        world.spawn((timer::Builder::new(
+            Duration::from_secs(*seconds_left.lock().unwrap()),
+            game_end_event.clone(),
+        )
+
+        .build(),));
+        world.spawn((
+            timer::Builder::new(Duration::from_secs(1), game_countdown_tick.clone())
+                .looping()
+                .build(),
+        ));
+
+        let game_countdown_tick_clone = game_countdown_tick.clone();
+        world.spawn((Action::when(
+            game_countdown_tick_clone.clone(),
+            move |_, world| {
+                *seconds_left.lock().unwrap() -= 1;
+                world.spawn((
+                    text::Builder::new(
+                        format!("{}", seconds_left.lock().unwrap()),
+                        PointWithAlignment {
+                            point: Point {
+                                x: (viewport.width() / 2) as i32,
+                                y: 0,
+                            },
+                            v_align: VAlign::Top,
+                            h_align: HAlign::Center,
+                        },
+                    )
+                        .with_color(Color::BLACK)
+                        .with_scale(viewport.height(), 1080)
+                    .build(),
+                    Action::despawn_self_when(game_countdown_tick_clone.clone()),
+                ));
+            },
+        ),));
+        game_countdown_tick.trigger();
 
         // spawn chickens
         {
@@ -72,25 +124,18 @@ pub fn run(gui_context: &mut GuiContext, sensortag_to_player_id: HashMap<u16, us
 
         let mut shoot_events = Vec::new();
         let mut reload_events = Vec::new();
-        let mut magazine_statuses = Vec::new();
         let mut score_changed_events = Vec::new();
 
         let ammo_width = resources.images[texture_id_map["ammo.png"]].query().width;
         let magazine_scale = 0.15 * viewport.height() as f32 / ammo_width as f32;
-        let scores = Arc::new(Mutex::new(Vec::new()));
-        let amount_of_players = sensortag_to_player_id.len();
+        let amount_of_players = player_datas.lock().unwrap().len();
         // spawn players
         {
             for i in 0..amount_of_players {
-                scores.lock().unwrap().push(0);
                 let shoot_event = Event::default();
                 let mut reload_event = Event::default();
-                let score_changed = Event::default();
+                let mut score_changed = Event::default();
 
-                let magazine_status = Arc::new(Mutex::new(MagazineStatus {
-                    ammo: 8,
-                    ammo_max: 8,
-                }));
                 let position = match i {
                     0 => PointWithAlignment {
                         point: Point { x: 0, y: 0 },
@@ -129,7 +174,8 @@ pub fn run(gui_context: &mut GuiContext, sensortag_to_player_id: HashMap<u16, us
                 let magazine = Magazine::new(
                     shoot_event.clone(),
                     reload_event.clone(),
-                    magazine_status.clone(),
+                    player_datas.clone(),
+                    i,
                     position,
                     magazine_scale,
                     texture_id_map["ammo.png"],
@@ -137,15 +183,29 @@ pub fn run(gui_context: &mut GuiContext, sensortag_to_player_id: HashMap<u16, us
                 );
                 world.spawn(magazine);
 
+                let mut score_position = position;
+                match i {
+                    0 | 1 => {
+                        score_position.point.y +=
+                            ((viewport.height() as f32 / 1080.0) * 150.0) as i32
+                    }
+                    2 | 3 => {
+                        score_position.point.y -=
+                            ((viewport.height() as f32 / 1080.0) * 150.0) as i32
+                    }
+                    _ => unreachable!(),
+                }
                 let score_changed_clone = score_changed.clone();
-                let scores_clone = scores.clone();
+                let player_datas_clone = player_datas.clone();
                 world.spawn((vec![Action::when(
                     score_changed.clone(),
                     move |_, world| {
                         let text = text::Builder::new(
-                            format!("score: {}", scores_clone.lock().unwrap()[i]),
-                            position,
+                            format!("score: {}", player_datas_clone.lock().unwrap()[i].score),
+                            score_position,
                         )
+                        .with_color(Color::BLACK)
+                        .with_scale(viewport.height(), 2160)
                         .build();
 
                         world.spawn((text, Action::despawn_self_when(score_changed_clone.clone())));
@@ -155,9 +215,11 @@ pub fn run(gui_context: &mut GuiContext, sensortag_to_player_id: HashMap<u16, us
                 // trigger shot event again, so that the magazine gets a chance to draw itself
                 reload_event.trigger();
 
+                // trigger once so score is visible at the beginning
+                score_changed.trigger();
+
                 shoot_events.push(shoot_event.clone());
                 reload_events.push(reload_event.clone());
-                magazine_statuses.push(magazine_status.clone());
                 score_changed_events.push(score_changed.clone());
             }
         }
@@ -165,35 +227,90 @@ pub fn run(gui_context: &mut GuiContext, sensortag_to_player_id: HashMap<u16, us
         game_time.resume();
 
         loop {
-            let mut is_shooting = false;
+            if game_end_event.consume_all() > 0 {
+                return player_datas;
+            }
+
+            let mut shooter = None;
             if let Ok(message) = gui_context.comm().try_recv_from_serial() {
-                let player_id = sensortag_to_player_id.get(&message.sensortag_id);
-                if let Some(player_id) = player_id {
+                let mut lock = player_datas.lock().unwrap();
+                let player_id = lock
+                    .iter_mut()
+                    .enumerate()
+                    .find(|(_, data)| data.sensortag_id == message.sensortag_id);
+                if let Some((player_id, data)) = player_id {
                     match message.kind {
                         SerialToGuiKind::Reload => {
-                            *magazine_statuses[*player_id].lock().unwrap() = MagazineStatus {
+                            sdl2::mixer::Channel::all().play(&reload_sounds[player_id], 0).unwrap();
+
+                            data.magazine_status = MagazineStatus {
                                 ammo: message.ammo,
                                 ammo_max: message.ammo_max,
                             };
-                            reload_events[*player_id].trigger();
+                            reload_events[player_id].trigger();
                         }
                         SerialToGuiKind::Shot => {
-                            scores.lock().unwrap()[*player_id] += 1;
-                            score_changed_events[*player_id].trigger();
+                            sdl2::mixer::Channel::all().play(&shoot_sounds[player_id], 0).unwrap();
 
-                            *magazine_statuses[*player_id].lock().unwrap() = MagazineStatus {
+                            data.magazine_status = MagazineStatus {
                                 ammo: message.ammo,
                                 ammo_max: message.ammo_max,
                             };
-                            shoot_events[*player_id].trigger();
-                            is_shooting = true;
+                            shoot_events[player_id].trigger();
+                            shooter = Some((player_id, message.sensortag_id));
                         }
                     }
                 }
             }
 
-            if is_shooting {
-                systems::flashing_sequence::run(gui_context, &mut world, true, &mut game_time);
+            if let Some((player_id, sensortag_id)) = shooter {
+                if let Some(victim_id) = systems::flashing_sequence::run(
+                    gui_context,
+                    &mut world,
+                    true,
+                    &mut game_time,
+                    sensortag_id,
+                ) {
+                    sdl2::mixer::Channel::all().play(&death_sounds[player_id], 0).unwrap();
+
+                    let victim = world.entity(victim_id).unwrap();
+                    let hitbox = victim.get::<&Hitbox>().unwrap();
+
+                    let score =
+                        (hitbox.width as f32 / 200.0) / (viewport.height() as f32 / 1440.0) - 0.5;
+
+                    player_datas.lock().unwrap()[player_id].score +=
+                        20_u32.saturating_sub((score * 5.0) as u32);
+                    score_changed_events[player_id].trigger();
+                }
+
+                while let Ok(message) = gui_context.comm().try_recv_from_serial() {
+                    let mut lock = player_datas.lock().unwrap();
+                    let player_id = lock
+                        .iter_mut()
+                        .enumerate()
+                        .find(|(_, data)| data.sensortag_id == message.sensortag_id);
+                    if let Some((player_id, data)) = player_id {
+                        match message.kind {
+                            SerialToGuiKind::Reload => {
+                                sdl2::mixer::Channel::all().play(&reload_sounds[player_id], 0).unwrap();
+
+                                data.magazine_status = MagazineStatus {
+                                    ammo: message.ammo,
+                                    ammo_max: message.ammo_max,
+                                };
+                                reload_events[player_id].trigger();
+                            }
+                            SerialToGuiKind::Shot => {
+                                data.magazine_status = MagazineStatus {
+                                    ammo: message.ammo,
+                                    ammo_max: message.ammo_max,
+                                };
+                                shoot_events[player_id].trigger();
+                            }
+                        }
+                    }
+                }
             }
 
             let frame_start = SystemTime::now();

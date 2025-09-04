@@ -37,9 +37,7 @@ impl Settings {
 }
 
 pub struct GuiContext {
-    // underscore because it is never accessed
-    // but we need it here, so it gets dropped with the canvas
-    _sdl_context: Sdl,
+    sdl_context: Sdl,
     canvas: WindowCanvas,
     cancel_token: CancelToken,
     comm: GuiComm,
@@ -80,11 +78,15 @@ impl GuiContext {
             .map_err(|e| e.to_string())
             .unwrap();
         GuiContext {
-            _sdl_context: sdl_context,
+            sdl_context,
             canvas,
             cancel_token,
             comm,
         }
+    }
+
+    pub fn sdl(&mut self) -> &mut Sdl {
+        &mut self.sdl_context
     }
 
     pub fn canvas(&mut self) -> &mut WindowCanvas {

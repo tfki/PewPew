@@ -9,7 +9,7 @@ pub mod common;
 pub mod game;
 pub mod intro;
 pub mod pregame;
-pub mod sandbox;
+pub mod scoreboard;
 
 #[derive(Debug)]
 pub enum LoadAllTexturesError {
@@ -22,7 +22,7 @@ pub fn load_all_textures<'a>(
 ) -> Result<HashMap<String, usize>, LoadAllTexturesError> {
     let mut file_idx_map = HashMap::new();
 
-    let files_to_load = [Path::new("res/flying_huhn.png"), Path::new("res/ammo.png"), Path::new("res/flying_huhn_dying.png")];
+    let files_to_load = [Path::new("res/images/flying_huhn.png"), Path::new("res/images/ammo.png"), Path::new("res/images/flying_huhn_dying.png")];
 
     for (idx, path) in files_to_load.iter().enumerate() {
         //                           -------------------------wat?--------------------------

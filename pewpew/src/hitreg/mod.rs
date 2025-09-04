@@ -19,15 +19,15 @@ pub struct BrightnessBuffer {
     pub is_white: bool,
 }
 
-const BRIGHTNESS_GRADIENT_THRESHOLD: u16 = 100;
+const BRIGHTNESS_GRADIENT_THRESHOLD: u16 = 25;
 
 pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
     move || {
         let mut state = State::Idle;
         let mut chicken_data = Vec::new();
         let mut gui_sequence: Vec<(u16, u32, bool)> = Vec::new();
-        let mut gui_timestamps: Vec<SystemTime> = Vec::new();
-        // val, tag_id, timestamp, white/black
+        let mut current_sensortag_id = 0;
+
         let mut last_brightness_buffer = BrightnessBuffer {
             val: 0,
             sensortag_id: 0,
@@ -82,9 +82,11 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
             match state {
                 State::Idle => match comm.recv().unwrap() {
                     ToHitreg::FromGui(GuiToHitreg::FlashingSequenceStart {
+                        sensortag_id,
                         num_frames,
                         sequences,
                     }) => {
+                        current_sensortag_id = sensortag_id;
                         chicken_data = sequences;
                         debug!(target: "Hitreg Thread", "{chicken_data:?}");
 
@@ -92,13 +94,15 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                         debug!(target: "Hitreg Thread", "changing state to {state:?} at t={}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis());
                     }
                     ToHitreg::FromSerial(serial_to_hit_reg) => {
-                        store_brightness_in_buffer(
-                            &mut last_brightness_buffer,
-                            &mut last_frame_brightness_buffer,
-                            serial_to_hit_reg.sensortag_id,
-                            serial_to_hit_reg.timestamp,
-                            serial_to_hit_reg.value_raw,
-                        );
+                        if serial_to_hit_reg.sensortag_id == current_sensortag_id {
+                            store_brightness_in_buffer(
+                                &mut last_brightness_buffer,
+                                &mut last_frame_brightness_buffer,
+                                serial_to_hit_reg.sensortag_id,
+                                serial_to_hit_reg.timestamp,
+                                serial_to_hit_reg.value_raw,
+                            );
+                        }
                     }
                     x => {
                         error!(target: "Hitreg Thread", "hitreg received unexpected message in state {state:?}, exiting: {x:?}");
@@ -106,7 +110,9 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                     }
                 },
                 State::WaitingForFlashFrameEnd(0) => {
-                    if let Ok(serial_to_hit_reg) = comm.try_recv_from_serial() {
+                    if let Ok(serial_to_hit_reg) = comm.try_recv_from_serial()
+                        && serial_to_hit_reg.sensortag_id == current_sensortag_id
+                    {
                         store_brightness_in_buffer(
                             &mut last_brightness_buffer,
                             &mut last_frame_brightness_buffer,
@@ -119,9 +125,7 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                     // all frames of the flashing sequence have arrived
                     // tell the gui the results
                     let desired_length = chicken_data.first().unwrap().1.len();
-                    if gui_timestamps.len() != desired_length
-                        || gui_sequence.len() != desired_length
-                    {
+                    if gui_sequence.len() != desired_length {
                         error!(target: "Hitreg Thread", "amount of frame-timestamps from gui does not match length of flashing sequences");
                     }
                     let gui_seq = gui_sequence.iter().map(|(_, _, x)| *x).collect::<Vec<_>>();
@@ -130,7 +134,6 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                         .iter()
                         .find_map(|(entity, sequence)| (sequence == &gui_seq).then_some(*entity));
                     comm.send(HitregToGui::Result(hit)).unwrap();
-                    gui_timestamps.clear();
                     gui_sequence.clear();
                     state = State::Idle;
                     debug!(target: "Hitreg Thread", "changing state to {state:?} at t={}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis());
@@ -142,8 +145,7 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                             last_brightness_buffer.is_white = false;
                             debug!(target: "Hitreg Thread", "new brightness {:?} at t={}", last_brightness_buffer, SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis());
                         }
-                        ToHitreg::FromGui(GuiToHitreg::FlashFrameEnd(time)) => {
-                            gui_timestamps.push(time);
+                        ToHitreg::FromGui(GuiToHitreg::FlashFrameEnd(_)) => {
                             if last_brightness_buffer.time == 0 {
                                 error!(target: "Hitreg Thread", "no brightness measurements available (or timestamp is 0)");
                             }
@@ -158,13 +160,15 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                             debug!(target: "Hitreg Thread", "changing state to {state:?} at t={}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis());
                         }
                         ToHitreg::FromSerial(serial_to_hit_reg) => {
-                            store_brightness_in_buffer(
-                                &mut last_brightness_buffer,
-                                &mut last_frame_brightness_buffer,
-                                serial_to_hit_reg.sensortag_id,
-                                serial_to_hit_reg.timestamp,
-                                serial_to_hit_reg.value_raw,
-                            );
+                            if serial_to_hit_reg.sensortag_id == current_sensortag_id {
+                                store_brightness_in_buffer(
+                                    &mut last_brightness_buffer,
+                                    &mut last_frame_brightness_buffer,
+                                    serial_to_hit_reg.sensortag_id,
+                                    serial_to_hit_reg.timestamp,
+                                    serial_to_hit_reg.value_raw,
+                                );
+                            }
                         }
                         x => {
                             error!(target: "Hitreg Thread", "hitreg received unexpected message in state {state:?}, exiting: {x:?}");
