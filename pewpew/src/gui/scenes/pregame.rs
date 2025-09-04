@@ -24,9 +24,6 @@ use std::thread;
 use std::time::{Duration, Instant};
 use sdl2::mixer::Chunk;
 
-mod custom_components;
-mod custom_systems;
-
 pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
     let viewport = {
         let (width, height) = gui_context.canvas().output_size().unwrap();
@@ -37,6 +34,7 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
 
     let shoot_sounds = [Chunk::from_file("res/../res/audio/gun-shot-359196.mp3").unwrap(), Chunk::from_file("res/../res/audio/glock19-18535.mp3").unwrap()];
     let reload_sounds = [Chunk::from_file("res/../res/audio/ak47_boltpull.mp3").unwrap(), Chunk::from_file("res/../res/audio/_en_sound_glock18-slideforward_.mp3").unwrap()];
+    let dry_shot_sound = Chunk::from_file("res/../res/audio/dry-fire-364846.mp3").unwrap();
     {
         let default_font = ttf_context
             .load_font("res/fonts/Walter_Turncoat/WalterTurncoat-Regular.ttf", 128)
@@ -141,9 +139,9 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
                         format!("{} missing", player_names[i]).to_string(),
                         position,
                     )
-                    .with_color(player_colors[i])
-                    .with_scale(viewport.height(), 1440)
-                    .build(),
+                        .with_color(player_colors[i])
+                        .with_scale(viewport.height(), 1440)
+                        .build(),
                     Action::despawn_self_when(shoot_event.clone()),
                 ));
 
@@ -176,8 +174,8 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
                     y: viewport.height() as i32 / 2,
                 }),
             )
-            .with_scale(viewport.height(), 1440)
-            .build(),
+                .with_scale(viewport.height(), 1440)
+                .build(),
             Action::despawn_self_when(all_players_joined_event.clone()),
         ));
 
@@ -189,7 +187,7 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
                     shoot_event.clone(),
                     some_player_joined_event.clone(),
                 )
-                .oneshot(),
+                    .oneshot(),
                 Action::despawn_self_when(shoot_event.clone()),
                 Action::when_oneshot(shoot_event.clone(), move |_, _| {
                     let mut lock = num_players_clone.lock().unwrap();
@@ -219,7 +217,7 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
                                 "Game starts in {}..",
                                 countdown_seconds_left.lock().unwrap()
                             )
-                            .to_string(),
+                                .to_string(),
                             PointWithAlignment {
                                 point: Point {
                                     x: (viewport.width() / 2) as i32,
@@ -229,9 +227,9 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
                                 h_align: HAlign::Center,
                             },
                         )
-                        .with_color(Color::WHITE)
-                        .with_scale(viewport.height(), 1440)
-                        .build(),
+                            .with_color(Color::WHITE)
+                            .with_scale(viewport.height(), 1440)
+                            .build(),
                         Action::despawn_self_when(start_game_countdown_tick_event.clone()),
                     ));
 
@@ -287,7 +285,7 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
                 some_player_joined_event.clone(),
                 start_countdown_event.clone(),
             )
-            .oneshot(),
+                .oneshot(),
             Action::despawn_self_when(some_player_joined_event.clone()),
             Action::when(some_player_joined_event.clone(), move |_entity, world| {
                 world.spawn((vec![
@@ -295,7 +293,7 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
                         some_player_joined_event.clone(),
                         start_countdown_event.clone(),
                     )
-                    .oneshot(),
+                        .oneshot(),
                     Action::despawn_self_when(some_player_joined_event.clone()),
                 ],));
             }),
@@ -341,13 +339,17 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
                         reload_events[player_id].trigger();
                     }
                     SerialToGuiKind::Shot => {
-                        sdl2::mixer::Channel::all().play(&shoot_sounds[player_id], 0).unwrap();
-
                         player_datas.lock().unwrap()[player_id].magazine_status = MagazineStatus {
                             ammo: message.ammo,
                             ammo_max: message.ammo_max,
                         };
-                        shoot_events[player_id].trigger();
+
+                        if message.ammo > 0 {
+                            sdl2::mixer::Channel::all().play(&shoot_sounds[player_id], 0).unwrap();
+                            shoot_events[player_id].trigger();
+                        } else  {
+                            sdl2::mixer::Channel::all().play(&dry_shot_sound, 0).unwrap();
+                        }
                     }
                 }
             }
