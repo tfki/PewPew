@@ -39,6 +39,7 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
     let shoot_sounds = [Chunk::from_file("res/audio/gun-shot-359196.mp3").unwrap(), Chunk::from_file("res/audio/glock19-18535.mp3").unwrap()];
     let reload_sounds = [Chunk::from_file("res/audio/ak47_boltpull.mp3").unwrap(), Chunk::from_file("res/audio/_en_sound_glock18-slideforward_.mp3").unwrap()];
     let death_sounds = [Chunk::from_file("res/audio/wilhelm_scream.mp3").unwrap(), Chunk::from_file("res/audio/ahhhh.mp3").unwrap()];
+    let dry_shot_sound = Chunk::from_file("res/../res/audio/dry-fire-364846.mp3").unwrap();
     {
         let default_font = ttf_context
             .load_font("res/fonts/Walter_Turncoat/WalterTurncoat-Regular.ttf", 128)
@@ -250,14 +251,18 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
                             reload_events[player_id].trigger();
                         }
                         SerialToGuiKind::Shot => {
-                            sdl2::mixer::Channel::all().play(&shoot_sounds[player_id], 0).unwrap();
-
-                            data.magazine_status = MagazineStatus {
+                            player_datas.lock().unwrap()[player_id].magazine_status = MagazineStatus {
                                 ammo: message.ammo,
                                 ammo_max: message.ammo_max,
                             };
-                            shoot_events[player_id].trigger();
-                            shooter = Some((player_id, message.sensortag_id));
+
+                            if message.ammo > 0 {
+                                sdl2::mixer::Channel::all().play(&shoot_sounds[player_id], 0).unwrap();
+                                shoot_events[player_id].trigger();
+                                shooter = Some((player_id, message.sensortag_id));
+                            } else  {
+                                sdl2::mixer::Channel::all().play(&dry_shot_sound, 0).unwrap();
+                            }
                         }
                     }
                 }
@@ -302,11 +307,17 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
                                 reload_events[player_id].trigger();
                             }
                             SerialToGuiKind::Shot => {
-                                data.magazine_status = MagazineStatus {
+                                player_datas.lock().unwrap()[player_id].magazine_status = MagazineStatus {
                                     ammo: message.ammo,
                                     ammo_max: message.ammo_max,
                                 };
-                                shoot_events[player_id].trigger();
+
+                                if message.ammo > 0 {
+                                    sdl2::mixer::Channel::all().play(&shoot_sounds[player_id], 0).unwrap();
+                                    shoot_events[player_id].trigger();
+                                } else  {
+                                    sdl2::mixer::Channel::all().play(&dry_shot_sound, 0).unwrap();
+                                }
                             }
                         }
                     }

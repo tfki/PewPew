@@ -299,9 +299,16 @@ void *main_thread(void *arg0)
             rf_send_button_pressed_message();
         }
 
-        if (magazine_left == 0) {
-            button_pressed = false; // ignore button presses when mag empty
+        if (button_pressed && magazine_left == 0) { // dry shot
+            is_button_cooldown = true;
+            last_button_trigger = time_counter;
+            button_pressed = false;
 
+            magazine_left--;
+            rf_send_button_pressed_message();
+        }
+
+        if (magazine_left == 0) {
             if (time_counter - last_button_blinky > ONE_SECOND_COUNTER_VALUE / 4 && false) { //! never blinky LED
                 last_button_blinky = time_counter;
                 GPIO_toggle(Board_GPIO_LED0);
@@ -352,3 +359,4 @@ void *main_thread(void *arg0)
         //last_lux = lux;
     }
 }
+
