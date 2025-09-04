@@ -251,18 +251,22 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
                             reload_events[player_id].trigger();
                         }
                         SerialToGuiKind::Shot => {
-                            player_datas.lock().unwrap()[player_id].magazine_status = MagazineStatus {
+                            let is_dry_shot = message.ammo == 0 && lock[player_id].magazine_status.ammo == 0;
+
+                            lock[player_id].magazine_status = MagazineStatus {
                                 ammo: message.ammo,
                                 ammo_max: message.ammo_max,
                             };
 
-                            if message.ammo > 0 {
-                                sdl2::mixer::Channel::all().play(&shoot_sounds[player_id], 0).unwrap();
-                                shoot_events[player_id].trigger();
-                                shooter = Some((player_id, message.sensortag_id));
-                            } else  {
+                            if is_dry_shot {
                                 sdl2::mixer::Channel::all().play(&dry_shot_sound, 0).unwrap();
+                            } else  {
+                                sdl2::mixer::Channel::all().play(&shoot_sounds[player_id], 0).unwrap();
+
+                                shooter = Some((player_id, message.sensortag_id));
                             }
+
+                            shoot_events[player_id].trigger();
                         }
                     }
                 }
