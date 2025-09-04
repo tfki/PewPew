@@ -12,6 +12,7 @@ use sdl2::rect::Rect;
 use std::path::Path;
 use std::thread;
 use std::time::{Duration, SystemTime};
+use sdl2::mixer::Chunk;
 
 pub fn run(gui_context: &mut GuiContext) {
     let viewport = {
@@ -20,6 +21,9 @@ pub fn run(gui_context: &mut GuiContext) {
     };
     let texture_creator = gui_context.canvas().texture_creator();
     let ttf_context = sdl2::ttf::init().unwrap();
+
+    let intro = Chunk::from_file("res/audio/valve_intro.mp3").unwrap();
+    sdl2::mixer::Channel::all().play(&intro, 0).unwrap();
     {
         let default_font = ttf_context
             .load_font("res/fonts/Walter_Turncoat/WalterTurncoat-Regular.ttf", 128)
@@ -28,7 +32,7 @@ pub fn run(gui_context: &mut GuiContext) {
 
         resources.images.push(
             texture_creator
-                .load_texture(Path::new("./res/intro_huhn_in_hole.png"))
+                .load_texture(Path::new("res/images/intro_huhn_in_hole.png"))
                 .unwrap(),
         ); // https://onlinetools.com/image/remove-specific-color-from-image
 
@@ -44,7 +48,7 @@ pub fn run(gui_context: &mut GuiContext) {
             .with_num_frames(14)
             .with_vertical_flip()
             .with_scale(viewport.height() as f32 / 360.0)
-            .with_frame_advance_interval(Duration::from_millis(200))
+            .with_frame_advance_interval(Duration::from_millis(600))
             .on_animation_end(intro_done_event.clone())
             .build();
 

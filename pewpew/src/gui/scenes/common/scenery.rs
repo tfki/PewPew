@@ -26,31 +26,31 @@ impl Scenery {
         {
             resources.images.push(
                 texture_creator
-                    .load_texture(Path::new("./res/sky.png"))
+                    .load_texture(Path::new("res/../res/images/sky.png"))
                     .unwrap(),
             );
 
             resources.images.push(
                 texture_creator
-                    .load_texture(Path::new("./res/backdrop.png"))
+                    .load_texture(Path::new("res/../res/images/backdrop.png"))
                     .unwrap(),
             );
 
             resources.images.push(
                 texture_creator
-                    .load_texture(Path::new("./res/castle.png"))
+                    .load_texture(Path::new("res/../res/images/castle.png"))
                     .unwrap(),
             );
 
             resources.images.push(
                 texture_creator
-                    .load_texture(Path::new("./res/foreground.png"))
+                    .load_texture(Path::new("res/../res/images/foreground.png"))
                     .unwrap(),
             );
 
             resources.images.push(
                 texture_creator
-                    .load_texture(Path::new("./res/tree.png"))
+                    .load_texture(Path::new("res/../res/images/tree.png"))
                     .unwrap(),
             );
         }

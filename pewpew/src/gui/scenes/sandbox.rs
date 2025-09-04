@@ -25,19 +25,19 @@ pub fn run(gui_context: &mut GuiContext) {
 
         resources.images.push(
             texture_creator
-                .load_texture(Path::new("./res/intro_huhn_in_hole.png"))
+                .load_texture(Path::new("res/images/intro_huhn_in_hole.png"))
                 .unwrap(),
         ); // https://onlinetools.com/image/remove-specific-color-from-image
 
         resources.images.push(
             texture_creator
-                .load_texture(Path::new("./res/flying_huhn.png"))
+                .load_texture(Path::new("res/images/flying_huhn.png"))
                 .unwrap(),
         ); // https://onlinetools.com/image/remove-specific-color-from-image
 
         resources.images.push(
             texture_creator
-                .load_texture(Path::new("./res/flying_huhn_dying.png"))
+                .load_texture(Path::new("res/images/flying_huhn_dying.png"))
                 .unwrap(),
         ); // https://onlinetools.com/image/remove-specific-color-from-image
 
