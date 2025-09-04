@@ -39,14 +39,6 @@ impl PointWithAlignment {
         Rect::new(x, y, width, height)
     }
 
-    pub fn new_top_left(point: Point) -> Self {
-        PointWithAlignment {
-            point,
-            v_align: VAlign::Top,
-            h_align: HAlign::Left,
-        }
-    }
-
     pub fn new_center(point: Point) -> Self {
         PointWithAlignment {
             point,

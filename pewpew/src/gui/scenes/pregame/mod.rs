@@ -19,11 +19,10 @@ use rand::Rng;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::BlendMode;
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
-use sdl2::mixer::{Chunk, InitFlag, AUDIO_S16LSB, DEFAULT_CHANNELS};
+use sdl2::mixer::Chunk;
 
 mod custom_components;
 mod custom_systems;
@@ -36,8 +35,8 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
     let texture_creator = gui_context.canvas().texture_creator();
     let ttf_context = sdl2::ttf::init().unwrap();
 
-    let mut shoot_sounds = vec![Chunk::from_file("res/../res/audio/gun-shot-359196.mp3").unwrap(), Chunk::from_file("res/../res/audio/glock19-18535.mp3").unwrap()];
-    let mut reload_sounds = vec![Chunk::from_file("res/../res/audio/ak47_boltpull.mp3").unwrap(), Chunk::from_file("res/../res/audio/_en_sound_glock18-slideforward_.mp3").unwrap()];
+    let shoot_sounds = [Chunk::from_file("res/../res/audio/gun-shot-359196.mp3").unwrap(), Chunk::from_file("res/../res/audio/glock19-18535.mp3").unwrap()];
+    let reload_sounds = [Chunk::from_file("res/../res/audio/ak47_boltpull.mp3").unwrap(), Chunk::from_file("res/../res/audio/_en_sound_glock18-slideforward_.mp3").unwrap()];
     {
         let default_font = ttf_context
             .load_font("res/fonts/Walter_Turncoat/WalterTurncoat-Regular.ttf", 128)
@@ -78,7 +77,7 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
             }
         }
 
-        let mut player_datas = Arc::new(Mutex::new(Vec::new()));
+        let player_datas = Arc::new(Mutex::new(Vec::new()));
         let mut shoot_events = Vec::new();
         let mut reload_events = Vec::new();
         let player_names = ["Player 1", "Player 2", "Player 3", "Player 4"];
@@ -325,7 +324,6 @@ pub fn run(gui_context: &mut GuiContext) -> Arc<Mutex<Vec<PlayerData>>> {
                                 ammo: message.ammo,
                                 ammo_max: message.ammo_max,
                             },
-                            color: player_colors[new_player_id],
                             score: 0,
                         });
                         new_player_id

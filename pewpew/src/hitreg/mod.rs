@@ -110,16 +110,16 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                     }
                 },
                 State::WaitingForFlashFrameEnd(0) => {
-                    if let Ok(serial_to_hit_reg) = comm.try_recv_from_serial() {
-                        if serial_to_hit_reg.sensortag_id == current_sensortag_id {
-                            store_brightness_in_buffer(
-                                &mut last_brightness_buffer,
-                                &mut last_frame_brightness_buffer,
-                                serial_to_hit_reg.sensortag_id,
-                                serial_to_hit_reg.timestamp,
-                                serial_to_hit_reg.value_raw,
-                            );
-                        }
+                    if let Ok(serial_to_hit_reg) = comm.try_recv_from_serial()
+                        && serial_to_hit_reg.sensortag_id == current_sensortag_id
+                    {
+                        store_brightness_in_buffer(
+                            &mut last_brightness_buffer,
+                            &mut last_frame_brightness_buffer,
+                            serial_to_hit_reg.sensortag_id,
+                            serial_to_hit_reg.timestamp,
+                            serial_to_hit_reg.value_raw,
+                        );
                     }
 
                     // all frames of the flashing sequence have arrived
@@ -145,7 +145,7 @@ pub fn run(mut comm: HitregComm, cancel_token: CancelToken) -> impl FnOnce() {
                             last_brightness_buffer.is_white = false;
                             debug!(target: "Hitreg Thread", "new brightness {:?} at t={}", last_brightness_buffer, SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis());
                         }
-                        ToHitreg::FromGui(GuiToHitreg::FlashFrameEnd(time)) => {
+                        ToHitreg::FromGui(GuiToHitreg::FlashFrameEnd(_)) => {
                             if last_brightness_buffer.time == 0 {
                                 error!(target: "Hitreg Thread", "no brightness measurements available (or timestamp is 0)");
                             }

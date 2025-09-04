@@ -14,6 +14,7 @@ pub struct Magazine {
 }
 
 impl Magazine {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         shoot_event: Event,
         reload_event: Event,
@@ -163,6 +164,7 @@ pub trait MakeAmmoWork {
 
 
 pub trait SpawnMagazineAction {
+    #[allow(clippy::too_many_arguments)]
     fn spawn_magazine_when(
         shoot_event: Event,
         reload_event: Event,

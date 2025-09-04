@@ -1,20 +1,15 @@
-use crate::comm::message::SerialToGuiKind;
 use crate::gui::engine::components::action::Action;
-use crate::gui::engine::components::hitbox::Hitbox;
 use crate::gui::engine::components::movement::Movement;
 use crate::gui::engine::components::point_with_alignment::{HAlign, PointWithAlignment, VAlign};
-use crate::gui::engine::components::texture::{AnimationEndBehavior, Texture};
-use crate::gui::engine::components::{Point, hitbox, text, texture, timer};
+use crate::gui::engine::components::{Point, text, texture, timer};
 use crate::gui::engine::event::Event;
 use crate::gui::engine::gui_context::GuiContext;
 use crate::gui::engine::resources::Resources;
 use crate::gui::engine::stopwatch::Stopwatch;
 use crate::gui::engine::systems;
 use crate::gui::scenes::common::PlayerData;
-use crate::gui::scenes::common::magazine::Magazine;
 use crate::gui::scenes::common::scenery::Scenery;
 use crate::gui::scenes::load_all_textures;
-use crate::serial::packet::MagazineStatus;
 use hecs::World;
 use log::trace;
 use rand::Rng;
@@ -37,7 +32,7 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
             .load_font("res/fonts/Walter_Turncoat/WalterTurncoat-Regular.ttf", 128)
             .unwrap();
         let mut resources = Resources::new(default_font);
-        let texture_id_map = load_all_textures(&mut resources, &texture_creator).unwrap();
+        let _texture_id_map = load_all_textures(&mut resources, &texture_creator).unwrap();
 
         let mut world = World::new();
         let mut game_time = Stopwatch::new_paused();
@@ -55,7 +50,7 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
 
         // game end event
         let mut game_end_event = Event::default();
-        let mut seconds_left = Arc::new(Mutex::new(11));
+        let seconds_left = Arc::new(Mutex::new(11));
         let mut game_countdown_tick = Event::default();
 
         world.spawn((timer::Builder::new(
@@ -157,7 +152,7 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
 
         loop {
             if game_end_event.consume_all() > 0 {
-                while let Ok(_) = gui_context.comm().try_recv_from_serial() {
+                while gui_context.comm().try_recv_from_serial().is_ok() {
                     // empty the buffers
                 }
                 return;

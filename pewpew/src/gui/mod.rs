@@ -1,13 +1,11 @@
 mod engine;
 mod scenes;
 
-use std::{thread, time::Duration};
-
 use crate::common::cancel_token::CancelToken;
 use crate::comm::gui::GuiComm;
 use crate::gui::engine::gui_context;
 use crate::gui::engine::gui_context::GuiContext;
-use sdl2::mixer::{InitFlag, AUDIO_S16LSB, DEFAULT_CHANNELS, Chunk}; // sudo apt install libsdl2-mixer-dev
+use sdl2::mixer::{InitFlag, AUDIO_S16LSB, DEFAULT_CHANNELS};
 
 pub fn run(comm: GuiComm, cancel_token: CancelToken) {
     let mut gui_context = GuiContext::new(gui_context::Settings::default(), cancel_token, comm);
@@ -52,5 +50,4 @@ pub fn run(comm: GuiComm, cancel_token: CancelToken) {
         let player_datas = scenes::game::run(&mut gui_context, player_datas);
         scenes::scoreboard::run(&mut gui_context, player_datas);
     }
-    //scenes::sandbox::run(&mut gui_context);
 }

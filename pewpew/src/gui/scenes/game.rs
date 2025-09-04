@@ -23,7 +23,7 @@ use sdl2::rect::Rect;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 use std::{thread, vec};
-use sdl2::mixer::{Chunk, InitFlag, AUDIO_S16LSB, DEFAULT_CHANNELS};
+use sdl2::mixer::Chunk;
 
 const GAME_DURATION_SEC: u64 = 20;
 
@@ -36,9 +36,9 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
     let ttf_context = sdl2::ttf::init().unwrap();
 
     // Load and play mp3
-    let mut shoot_sounds = vec![Chunk::from_file("res/audio/gun-shot-359196.mp3").unwrap(), Chunk::from_file("res/audio/glock19-18535.mp3").unwrap()];
-    let mut reload_sounds = vec![Chunk::from_file("res/audio/ak47_boltpull.mp3").unwrap(), Chunk::from_file("res/audio/_en_sound_glock18-slideforward_.mp3").unwrap()];
-    let mut death_sounds = vec![Chunk::from_file("res/audio/wilhelm_scream.mp3").unwrap(), Chunk::from_file("res/audio/ahhhh.mp3").unwrap()];
+    let shoot_sounds = [Chunk::from_file("res/audio/gun-shot-359196.mp3").unwrap(), Chunk::from_file("res/audio/glock19-18535.mp3").unwrap()];
+    let reload_sounds = [Chunk::from_file("res/audio/ak47_boltpull.mp3").unwrap(), Chunk::from_file("res/audio/_en_sound_glock18-slideforward_.mp3").unwrap()];
+    let death_sounds = [Chunk::from_file("res/audio/wilhelm_scream.mp3").unwrap(), Chunk::from_file("res/audio/ahhhh.mp3").unwrap()];
     {
         let default_font = ttf_context
             .load_font("res/fonts/Walter_Turncoat/WalterTurncoat-Regular.ttf", 128)
@@ -62,7 +62,7 @@ pub fn run(gui_context: &mut GuiContext, player_datas: Arc<Mutex<Vec<PlayerData>
 
         // game end event
         let mut game_end_event = Event::default();
-        let mut seconds_left = Arc::new(Mutex::new(GAME_DURATION_SEC));
+        let seconds_left = Arc::new(Mutex::new(GAME_DURATION_SEC));
         let mut game_countdown_tick = Event::default();
 
         world.spawn((timer::Builder::new(
