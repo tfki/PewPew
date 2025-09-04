@@ -12,6 +12,7 @@ use sdl2::mixer::{InitFlag, AUDIO_S16LSB, DEFAULT_CHANNELS, Chunk}; // sudo apt 
 pub fn run(comm: GuiComm, cancel_token: CancelToken) {
     let mut gui_context = GuiContext::new(gui_context::Settings::default(), cancel_token, comm);
 
+    /*
     let sdl = sdl2::init().unwrap();
     let _audio = sdl.audio().unwrap();
     // Initialize mixer with MP3 support
@@ -19,7 +20,7 @@ pub fn run(comm: GuiComm, cancel_token: CancelToken) {
     sdl2::mixer::open_audio(44_100, AUDIO_S16LSB, DEFAULT_CHANNELS, 1024).unwrap();
 
     // Load and play mp3
-    let chunk = Chunk::from_file("res/glock19-18535.mp3").unwrap();
+    let mut chunk = Chunk::from_file("res/glock19-18535.mp3").unwrap();
     sdl2::mixer::Channel::all().play(&chunk, 0).unwrap();
     thread::sleep(Duration::from_secs(2));
     chunk = Chunk::from_file("res/gun-shot-359196.mp3").unwrap();
@@ -37,8 +38,13 @@ pub fn run(comm: GuiComm, cancel_token: CancelToken) {
     chunk = Chunk::from_file("res/wilhelm_scream.mp3").unwrap();
     sdl2::mixer::Channel::all().play(&chunk, 0).unwrap();
     thread::sleep(Duration::from_secs(2));
+*/
 
+    let _audio = gui_context.sdl().audio().unwrap();
 
+    // Initialize mixer with MP3 support
+    sdl2::mixer::init(InitFlag::MP3).unwrap();
+    sdl2::mixer::open_audio(44_100, AUDIO_S16LSB, DEFAULT_CHANNELS, 1024).unwrap();
 
     scenes::intro::run(&mut gui_context);
     loop {
