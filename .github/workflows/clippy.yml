@@ -13,7 +13,7 @@ jobs:
       - name: Apt update
         run: sudo apt update -y
       - name: Install sdl2
-        run: sudo apt install -y libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev
+        run: sudo apt install -y libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libsdl2-mixer-dev
       - name: Run Clippy
         run: |
           output=$(cargo clippy --all-targets --all-features --manifest-path pewpew/Cargo.toml)
