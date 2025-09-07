@@ -3,9 +3,20 @@
 
 # PewPew (IOT LAB Final) 
 
-##### Sebb's special place (for special people)
-- ```cargo run --bin ur_sandbox```
-- ```cargo run``` if src/main.rs exists (with main func (```pub fn main(){}```))
+## How to Run
+
+### Prerequisites
+
+#### Flash Sensortag and Launchpad
+Use the Node/Concentrator projects from the lab, add `sensortag.c` and `launchpad.c` to the corresponding projects and remember to start their main threads.
+
+#### Install Dependencies
+To build, you need sdl2, sdl2-ttf, sdl2-image and sdl2-mixer. On Windows, all the libraries are already in this repository, on Linux you have to install them yourself (on Debian or Ubuntu, install `libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev libsdl2-mixer-dev`)
+
+#### Set the Serial Port
+Then open `pewpew/src/user_settings.rs` and set the value of `SERIAL_PORT`.
+
+Finally run `cargo run --bin pewpew` and the game should start
 
 ## DOD (Definition of Done)
 ### Modus 1
